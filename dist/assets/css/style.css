@@ -1,3 +1,9 @@
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 600; font-display: swap; src: url('../fonts/cinzel-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 700; font-display: swap; src: url('../fonts/cinzel-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Lato'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/lato-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Lato'; font-style: italic; font-weight: 400; font-display: swap; src: url('../fonts/lato-latin-400-italic.woff2') format('woff2'); }
+@font-face { font-family: 'Lato'; font-style: normal; font-weight: 700; font-display: swap; src: url('../fonts/lato-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Lato'; font-style: italic; font-weight: 700; font-display: swap; src: url('../fonts/lato-latin-700-italic.woff2') format('woff2'); }
 /* KAME GROUP — feuille de style principale
    Couleurs et typographies de la charte graphique (Cinzel / Lato). */
 
@@ -585,3 +591,17 @@ html.js [data-reveal][data-delay="3"] { transition-delay: .3s; }
 .space-next .hex-icon { width: 44px; height: 38px; }
 .space-next .hex-icon svg { width: 20px; height: 20px; }
 .space-next .small { color: var(--muted); font-size: 15px; }
+
+/* Pied de page légal, bandeau cookies, formulaire de données */
+.footer-legal { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; }
+.footer-legal a, .footer-prefs { color: rgba(255,255,255,.88); font: 400 14px/1.6 var(--font-text); text-decoration: none; }
+.footer-legal a:hover, .footer-prefs:hover { color: #fff; text-decoration: underline; }
+.footer-prefs { text-decoration: none; }
+.cookie-notice { position: fixed; z-index: 60; left: 16px; right: 16px; bottom: 16px; max-width: 640px; margin: 0 auto; display: flex; gap: 16px; align-items: center; background: #fff; color: #1d2b33; border: 1px solid rgba(20,91,99,.25); border-radius: 14px; padding: 14px 18px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+.cookie-notice p { margin: 0; font-size: 15px; line-height: 1.5; }
+.cookie-notice a { color: #0E6E68; font-weight: 700; }
+.cookie-notice .btn { flex: none; }
+.legal fieldset.field { border: 0; padding: 0; margin: 0 0 18px; }
+.legal fieldset legend { font-weight: 700; margin-bottom: 8px; }
+.legal .form { margin-top: 12px; }
+@media (max-width: 560px) { .cookie-notice { flex-direction: column; align-items: stretch; } }

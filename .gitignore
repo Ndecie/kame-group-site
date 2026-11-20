@@ -1,0 +1,11 @@
+# Secrets : ne jamais les mettre sur GitHub
+.env
+.env.*
+*.pem
+*.key
+# Fichiers de travail
+__pycache__/
+*.zip
+shots/
+.DS_Store
+.netlify/
