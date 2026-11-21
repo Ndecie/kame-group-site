@@ -8,6 +8,7 @@ En ligne : https://kamegroupe.com
 ## Structure
 - `build.py` — génère toutes les pages (FR/EN) dans `dist/`.
 - `dist/` — le site publié par Netlify (HTML, `assets/css`, `assets/js`, `assets/img`, `assets/fonts`).
+- `dist/en/` — la version anglaise des pages publiques, générée par `build.py` (ne pas modifier à la main).
 - `netlify.toml` — publication et en-têtes de sécurité.
 - `SECURITY.md` — politique de sécurité.
 
@@ -17,6 +18,14 @@ En ligne : https://kamegroupe.com
 - Les entreprises, montants et scores sont **fictifs** et écrits dans ce fichier ; rien n'est envoyé à un serveur.
 - `dist/assets/js/kame-icons.js` — icônes, généré par `build.py` (ne pas modifier à la main).
 - `dist/assets/demo/attestation-kame-demo.txt` — document de démonstration reconnu par « Vérifier un document ».
+
+## Référencement (Google)
+- Titres et descriptions des pages, en français et en anglais : dictionnaire `SEO` dans `build.py`.
+- Pages publiques : français à la racine (kamegroupe.com/investisseur), anglais dans /en/ (kamegroupe.com/en/investisseur),
+  reliées entre elles pour Google (hreflang). Connexion et espace membre gardent le bouton FR/EN sur place.
+- Carte d'identité de KAME GROUP pour Google (données structurées) sur la page d'accueil.
+  Ajouter les réseaux sociaux officiels dans `SAME_AS` dès qu'ils existent.
+- `sitemap.xml` et `robots.txt` sont regénérés à chaque `python3 build.py`.
 
 ## Modifier le site
 1. Modifier `build.py` (textes, pages) ou les fichiers de `dist/assets/`.

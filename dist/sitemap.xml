@@ -1,63 +1,203 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://kamegroupe.com/</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/partenaire.html</loc>
+    <loc>https://kamegroupe.com/en/</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/partenaire</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/partenaire"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/partenaire"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/partenaire"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/en/partenaire</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/partenaire"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/partenaire"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/partenaire"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/commercant</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/commercant"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/commercant"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/commercant"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/en/commercant</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/commercant"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/commercant"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/commercant"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/entreprise</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/entreprise"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/entreprise"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/entreprise"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/en/entreprise</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/entreprise"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/entreprise"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/entreprise"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/investisseur</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/investisseur"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/investisseur"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/investisseur"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/en/investisseur</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/investisseur"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/investisseur"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/investisseur"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/formations</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/formations"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/formations"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/formations"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/en/formations</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/formations"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/formations"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/formations"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/connexion</loc>
     <lastmod>2026-11-21</lastmod>
   </url>
   <url>
-    <loc>https://kamegroupe.com/commercant.html</loc>
+    <loc>https://kamegroupe.com/confidentialite</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/confidentialite"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/confidentialite"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/confidentialite"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/entreprise.html</loc>
+    <loc>https://kamegroupe.com/en/confidentialite</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/confidentialite"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/confidentialite"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/confidentialite"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/investisseur.html</loc>
+    <loc>https://kamegroupe.com/conditions-utilisation</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/conditions-utilisation"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/conditions-utilisation"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/conditions-utilisation"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/formations.html</loc>
+    <loc>https://kamegroupe.com/en/conditions-utilisation</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/conditions-utilisation"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/conditions-utilisation"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/conditions-utilisation"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/connexion.html</loc>
+    <loc>https://kamegroupe.com/cookies</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/cookies"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/cookies"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/cookies"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/confidentialite.html</loc>
+    <loc>https://kamegroupe.com/en/cookies</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/cookies"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/cookies"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/cookies"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/conditions-utilisation.html</loc>
+    <loc>https://kamegroupe.com/mentions-legales</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/mentions-legales"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/mentions-legales"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/mentions-legales"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/cookies.html</loc>
+    <loc>https://kamegroupe.com/en/mentions-legales</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/mentions-legales"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/mentions-legales"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/mentions-legales"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/mentions-legales.html</loc>
+    <loc>https://kamegroupe.com/tarifs-remboursements</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/tarifs-remboursements"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/tarifs-remboursements"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/tarifs-remboursements"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/tarifs-remboursements.html</loc>
+    <loc>https://kamegroupe.com/en/tarifs-remboursements</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/tarifs-remboursements"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/tarifs-remboursements"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/tarifs-remboursements"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/accessibilite.html</loc>
+    <loc>https://kamegroupe.com/accessibilite</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/accessibilite"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/accessibilite"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/accessibilite"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/suppression-donnees.html</loc>
+    <loc>https://kamegroupe.com/en/accessibilite</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/accessibilite"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/accessibilite"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/accessibilite"/>
   </url>
   <url>
-    <loc>https://kamegroupe.com/plan-du-site.html</loc>
+    <loc>https://kamegroupe.com/suppression-donnees</loc>
     <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/suppression-donnees"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/suppression-donnees"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/suppression-donnees"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/en/suppression-donnees</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/suppression-donnees"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/suppression-donnees"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/suppression-donnees"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/plan-du-site</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/plan-du-site"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/plan-du-site"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/plan-du-site"/>
+  </url>
+  <url>
+    <loc>https://kamegroupe.com/en/plan-du-site</loc>
+    <lastmod>2026-11-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kamegroupe.com/plan-du-site"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kamegroupe.com/en/plan-du-site"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kamegroupe.com/plan-du-site"/>
   </url>
 </urlset>

@@ -4,6 +4,7 @@ Toutes les pages partagent le même en-tête, le même pied de page et le même 
 import json
 import math
 import os
+import re
 import html as H
 
 DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dist')
@@ -28,10 +29,96 @@ LEGAL_RCCM = ''        # numéro RCCM
 LEGAL_NIF = ''         # numéro d'identification fiscale
 LEGAL_ADDRESS = ''     # adresse postale complète
 PUBLISHER = 'Ndecie Boulandi, fondatrice et présidente'
+# Réseaux sociaux officiels (LinkedIn, Facebook, Instagram…) : ajouter les adresses dès qu'ils existent,
+# Google les relie alors à KAME GROUP
+SAME_AS = []
+
+# Langue de la page en cours de génération :
+# 'fr' et 'en' : pages publiques écrites dans une seule langue (la version anglaise est dans /en/), pour Google ;
+# 'bi' : pages de l'application (connexion, espace membre, merci, 404) avec le bouton FR/EN qui bascule sur place.
+MODE = 'bi'
+CURRENT = 'index.html'
+PUBLIC_PAGES = ['index.html', 'investisseur.html', 'entreprise.html', 'commercant.html', 'partenaire.html', 'formations.html',
+                'confidentialite.html', 'conditions-utilisation.html', 'cookies.html', 'mentions-legales.html',
+                'tarifs-remboursements.html', 'accessibilite.html', 'suppression-donnees.html', 'plan-du-site.html']
+
+# Titres et descriptions affichés par Google, en français et en anglais (une seule source à modifier)
+SEO = {
+    'index.html': (
+        'KAME GROUP | Fintech au Gabon : identité numérique, score et données',
+        'KAME GROUP | Fintech in Gabon: digital identity, credit scoring and data',
+        "KAME GROUP, fintech gabonaise basée à Libreville : identité numérique (KYC), KAME Score et données fiables pour investir au Gabon et financer les PME.",
+        'KAME GROUP is a Gabonese fintech based in Libreville: digital identity (KYC), the KAME Score and reliable data to invest in Gabon and finance SMEs.'),
+    'investisseur.html': (
+        "Investir au Gabon : PME vérifiées, KAME Score et opportunités | KAME GROUP",
+        'Invest in Gabon: verified SMEs, KAME Score and opportunities | KAME GROUP',
+        "Investissez au Gabon en confiance : entreprises vérifiées, KAME Score de solvabilité, données KAME Data et opportunités d'investissement dans les PME gabonaises.",
+        'Invest in Gabon with confidence: verified businesses, the KAME Score for creditworthiness, KAME Data insights and investment opportunities in Gabonese SMEs.'),
+    'entreprise.html': (
+        'PME au Gabon : identité, conformité, données et financement | KAME GROUP',
+        'SMEs in Gabon: identity, compliance, data and funding | KAME GROUP',
+        "Entreprises du Gabon : identifiez vos clients avec KAME ID, restez conformes, protégez vos données et prouvez votre fiabilité aux investisseurs avec le KAME Score.",
+        'Businesses in Gabon: identify your customers with KAME ID, stay compliant, protect your data and prove your reliability to investors with the KAME Score.'),
+    'commercant.html': (
+        'Commerçants au Gabon : identité vérifiée, crédit et suivi des ventes | KAME GROUP',
+        'Merchants in Gabon: verified identity, credit access and sales tracking | KAME GROUP',
+        "Boutique, marché, artisanat ou commerce agricole au Gabon : une identité vérifiée, un dossier fiable pour accéder au financement et des outils simples pour suivre vos ventes.",
+        'Shop, market stall, crafts or farm trade in Gabon: a verified identity, a reliable file to access financing and simple tools to track your sales.'),
+    'partenaire.html': (
+        "Devenir partenaire d'une fintech au Gabon | KAME GROUP",
+        'Partner with a fintech in Gabon | KAME GROUP',
+        "PayTech, entreprises technologiques, institutions et écoles : devenez partenaire de KAME GROUP pour bâtir des solutions numériques et financières au Gabon et en Afrique centrale.",
+        'PayTechs, technology companies, institutions and schools: partner with KAME GROUP to build digital and financial solutions for Gabon and Central Africa.'),
+    'formations.html': (
+        'Formations numériques pour les entreprises au Gabon | KAME GROUP',
+        'Digital skills training for businesses in Gabon | KAME GROUP',
+        "Formations KAME GROUP pour les équipes des entreprises membres au Gabon : outils KAME, digitalisation des documents, paiements numériques et bonnes pratiques (bientôt).",
+        "KAME GROUP training for member businesses' teams in Gabon: KAME tools, digitising documents, digital payments and good practices (coming soon)."),
+    'confidentialite.html': (
+        'Politique de confidentialité | KAME GROUP', 'Privacy policy | KAME GROUP',
+        'Comment KAME GROUP collecte, utilise et protège vos informations : données collectées, utilisation, durée de conservation et vos droits.',
+        'How KAME GROUP collects, uses and protects your information: data collected, use, retention period and your rights.'),
+    'conditions-utilisation.html': (
+        "Conditions d'utilisation | KAME GROUP", 'Terms of use | KAME GROUP',
+        "Conditions d'utilisation du site et de l'espace membre KAME GROUP : accès, engagements, absence de conseil en investissement, données et droit applicable.",
+        'Terms of use of the KAME GROUP website and member area: access, commitments, no investment advice, data and governing law.'),
+    'cookies.html': (
+        'Politique cookies | KAME GROUP', 'Cookie policy | KAME GROUP',
+        'Politique cookies de KAME GROUP : aucun cookie publicitaire ni de pistage, seulement le strict nécessaire. Gérez vos préférences.',
+        'KAME GROUP cookie policy: no advertising or tracking cookies, only what is strictly necessary. Manage your preferences.'),
+    'mentions-legales.html': (
+        'Mentions légales | KAME GROUP', 'Legal notice | KAME GROUP',
+        'Mentions légales de KAME GROUP : éditeur, responsable de la publication, hébergeur et crédits.',
+        'KAME GROUP legal notice: publisher, publication director, host and credits.'),
+    'tarifs-remboursements.html': (
+        'Tarifs et remboursements | KAME GROUP', 'Pricing and refunds | KAME GROUP',
+        'Tarifs et remboursements KAME GROUP : accès gratuit au prototype, aucun frais caché, conditions publiées avant toute offre payante.',
+        'KAME GROUP pricing and refunds: free access to the prototype, no hidden fees, terms published before any paid offer.'),
+    'accessibilite.html': (
+        'Accessibilité | KAME GROUP', 'Accessibility | KAME GROUP',
+        "Déclaration d'accessibilité de KAME GROUP : navigation au clavier, textes alternatifs, contrastes et formulaires accessibles.",
+        'KAME GROUP accessibility statement: keyboard navigation, text alternatives, contrast and accessible forms.'),
+    'suppression-donnees.html': (
+        'Supprimer mes données | KAME GROUP', 'Delete my data | KAME GROUP',
+        "Demandez l'accès, la correction ou la suppression de vos données personnelles chez KAME GROUP, et la fermeture de votre compte.",
+        'Ask KAME GROUP to access, correct or delete your personal data, or to close your account.'),
+    'plan-du-site.html': (
+        'Plan du site | KAME GROUP', 'Site map | KAME GROUP',
+        'Plan du site KAME GROUP : toutes les pages.', 'KAME GROUP site map: all pages.'),
+}
 
 
-def page_url(fname):
-    return SITE_URL + '/' if fname == 'index.html' else '%s/%s' % (SITE_URL, fname)
+def page_url(fname, lang='fr'):
+    # Adresse retenue par Google : sans « .html », comme Netlify affiche les pages (Pretty URLs) ;
+    # la version anglaise est dans /en/
+    slug = '' if fname == 'index.html' else fname[:-5]
+    return '%s%s/%s' % (SITE_URL, '/en' if lang == 'en' else '', slug)
+
+
+def local_href(fname, lang):
+    # Lien vers une page publique dans une langue donnée (Netlify retire « .html » à la publication)
+    prefix = '/en/' if lang == 'en' else '/'
+    return prefix if fname == 'index.html' else prefix + fname
 
 GOLD, NAVY = '#F2B33D', '#12304A'
 
@@ -44,6 +131,11 @@ def fr_typo(s):
 
 
 def T(fr, en):
+    # Page publique : une seule langue écrite dans la page ; application : les deux, la feuille de style affiche la bonne
+    if MODE == 'fr':
+        return fr_typo(fr)
+    if MODE == 'en':
+        return en
     return '<span class="t-fr">%s</span><span class="t-en" lang="en">%s</span>' % (fr_typo(fr), en)
 
 
@@ -52,7 +144,16 @@ def attr(s):
 
 
 def bi_attr(name, fr, en):
+    if MODE in ('fr', 'en'):
+        return '%s="%s"' % (name, attr(fr if MODE == 'fr' else en))
     return '%s="%s" data-%s-fr="%s" data-%s-en="%s"' % (name, attr(fr), name, attr(fr), name, attr(en))
+
+
+def opt(value, fr, en):
+    # Option de liste déroulante dans la langue de la page
+    if MODE in ('fr', 'en'):
+        return '<option value="%s">%s</option>' % (attr(value), fr if MODE == 'fr' else en)
+    return '<option value="%s" data-text-fr="%s" data-text-en="%s">%s</option>' % (attr(value), attr(fr), attr(en), fr)
 
 
 # ---------------------------------------------------------------- icônes (24 x 24, trait)
@@ -386,8 +487,46 @@ VALUES = [
 
 
 # ---------------------------------------------------------------- morceaux communs
+def structured_data(lang):
+    # « Carte d'identité » lue par Google : qui est KAME GROUP, où, son logo et son site
+    en = lang == 'en'
+    org = {
+        '@type': 'Organization', '@id': SITE_URL + '/#organization', 'name': 'KAME GROUP',
+        'alternateName': ['KAME', 'KAME GROUP Gabon', 'KAME GROUP Libreville'],
+        'url': SITE_URL + '/',
+        'logo': {'@type': 'ImageObject', 'url': SITE_URL + '/assets/img/apple-touch-icon.png', 'width': 180, 'height': 180},
+        'image': SITE_URL + '/assets/img/og-image.jpg',
+        'description': SEO['index.html'][3 if en else 2],
+        'slogan': 'A secure and bright future.' if en else 'Un avenir sûr et éclairé.',
+        'foundingLocation': {'@type': 'Place', 'name': 'Libreville, Gabon'},
+        'address': {'@type': 'PostalAddress', 'addressLocality': 'Libreville', 'addressCountry': 'GA'},
+        'areaServed': [{'@type': 'Country', 'name': 'Gabon'},
+                       {'@type': 'Place', 'name': 'Central Africa (CEMAC)' if en else 'Afrique centrale (CEMAC)'}],
+        'founder': {'@type': 'Person', 'name': 'Ndecie Boulandi', 'jobTitle': 'Founder and President' if en else 'Fondatrice et présidente'},
+        'knowsAbout': (['Fintech', 'Digital identity (KYC)', 'Credit scoring', 'Business data', 'Blockchain', 'Cybersecurity', 'Investing in Gabon']
+                       if en else ['Fintech', "Identité numérique (KYC)", 'Score de crédit', "Données d'entreprises", 'Blockchain',
+                                   'Cybersécurité', 'Investir au Gabon']),
+    }
+    if SAME_AS:
+        org['sameAs'] = SAME_AS
+    if CONTACT_EMAIL:
+        org['email'] = CONTACT_EMAIL
+    graph = [org]
+    if not en:
+        # Nom du site affiché dans les résultats : à placer sur la page d'accueil principale
+        graph.append({'@type': 'WebSite', '@id': SITE_URL + '/#website', 'name': 'KAME GROUP', 'alternateName': ['KAME', 'kamegroupe.com'],
+                      'url': SITE_URL + '/', 'inLanguage': ['fr', 'en'], 'publisher': {'@id': SITE_URL + '/#organization'}})
+    data = json.dumps({'@context': 'https://schema.org', '@graph': graph}, ensure_ascii=False, indent=1).replace('</', '<\\/')
+    return '<script type="application/ld+json">\n%s\n</script>\n' % data
+
+
 def head(title_fr, title_en, desc_fr, fname='index.html', noindex=False, base=None):
-    url = page_url(fname)
+    desc_en = desc_fr
+    if fname in SEO:
+        title_fr, title_en, desc_fr, desc_en = SEO[fname]
+    lang = 'en' if MODE == 'en' else 'fr'
+    title, desc = (title_en, desc_en) if lang == 'en' else (title_fr, desc_fr)
+    url = page_url(fname, lang)
     extra = ''
     if base:
         extra += '<base href="%s">\n' % base
@@ -395,13 +534,21 @@ def head(title_fr, title_en, desc_fr, fname='index.html', noindex=False, base=No
         extra += '<meta name="robots" content="noindex">\n'
     else:
         extra += '<link rel="canonical" href="%s">\n' % url
-    tpl = ('<!DOCTYPE html>\n<html lang="fr">\n<head>\n<meta charset="utf-8">\n'
+        if MODE != 'bi':
+            # La même page dans l'autre langue (hreflang)
+            extra += ''.join('<link rel="alternate" hreflang="%s" href="%s">\n' % (hl, page_url(fname, l))
+                             for hl, l in (('fr', 'fr'), ('en', 'en'), ('x-default', 'fr')))
+    if MODE == 'bi':
+        extra += '<meta name="title-fr" content="%s">\n<meta name="title-en" content="%s">\n' % (attr(title_fr), attr(title_en))
+    if fname == 'index.html' and MODE != 'bi':
+        extra += structured_data(lang)
+    tpl = ('<!DOCTYPE html>\n<html lang="{lang}"{fixed}>\n<head>\n<meta charset="utf-8">\n'
            '<meta name="viewport" content="width=device-width, initial-scale=1">\n{extra}'
-           '<title>{tfr}</title>\n<meta name="title-fr" content="{tfr}">\n<meta name="title-en" content="{ten}">\n'
+           '<title>{title}</title>\n'
            '<meta name="description" content="{desc}">\n<meta name="theme-color" content="#145B63">\n'
            '<meta property="og:type" content="website">\n<meta property="og:site_name" content="KAME GROUP">\n'
-           '<meta property="og:locale" content="fr_FR">\n<meta property="og:locale:alternate" content="en_US">\n'
-           '<meta property="og:url" content="{url}">\n<meta property="og:title" content="{tfr}">\n'
+           '<meta property="og:locale" content="{loc}">\n<meta property="og:locale:alternate" content="{loc2}">\n'
+           '<meta property="og:url" content="{url}">\n<meta property="og:title" content="{title}">\n'
            '<meta property="og:description" content="{desc}">\n'
            '<meta property="og:image" content="{site}/assets/img/og-image.jpg">\n'
            '<meta property="og:image:width" content="{ogw}">\n<meta property="og:image:height" content="{ogh}">\n'
@@ -412,8 +559,9 @@ def head(title_fr, title_en, desc_fr, fname='index.html', noindex=False, base=No
            '<link rel="stylesheet" href="assets/css/style.css">\n'
            '<script src="assets/js/lang.js"></script>\n'
            '</head>\n')
-    return tpl.format(extra=extra, tfr=attr(title_fr), ten=attr(title_en), desc=attr(desc_fr), url=url, site=SITE_URL,
-                      ogw=OG_SIZE[0], ogh=OG_SIZE[1])
+    return tpl.format(lang=lang, fixed=' data-lang-fixed' if MODE != 'bi' else '', extra=extra, title=attr(title), desc=attr(desc),
+                      url=url, site=SITE_URL, ogw=OG_SIZE[0], ogh=OG_SIZE[1],
+                      loc='en_US' if lang == 'en' else 'fr_FR', loc2='fr_FR' if lang == 'en' else 'en_US')
 
 
 def brand(href):
@@ -425,6 +573,12 @@ def brand(href):
 
 
 def lang_switch():
+    if MODE in ('fr', 'en'):
+        # Page publique : FR et EN mènent à la même page dans l'autre langue
+        return ('<div class="lang-switch" role="group" aria-label="Langue / Language">'
+                '<a href="%s" hreflang="fr" lang="fr"%s>FR</a><a href="%s" hreflang="en" lang="en"%s>EN</a></div>'
+                % (local_href(CURRENT, 'fr'), ' aria-current="true"' if MODE == 'fr' else '',
+                   local_href(CURRENT, 'en'), ' aria-current="true"' if MODE == 'en' else ''))
     return ('<div class="lang-switch" role="group" aria-label="Langue / Language">'
             '<button type="button" data-set-lang="fr" aria-pressed="true" lang="fr">FR</button>'
             '<button type="button" data-set-lang="en" aria-pressed="false" lang="en">EN</button></div>')
@@ -541,13 +695,27 @@ def footer(home, brand_href=None):
                legal_links()))
 
 
+def localize_en(html):
+    # Version anglaise (dossier /en/) : les fichiers communs et les pages de l'application restent à la racine du site
+    html = re.sub(r'(\s(?:href|src|action|srcset)=")(?=assets/|connexion\.html|espace-membre\.html|merci\.html)', r'\1/', html)
+    return html.replace('url(assets/', 'url(/assets/')
+
+
 def page(fname, title_fr, title_en, desc_fr, main, home='index.html', noindex=False, base=None, brand_href=None, member=False, scripts=''):
+    global CURRENT
+    CURRENT = fname
     body = ('<body>\n<a class="skip-link" href="#contenu">%s</a>\n%s\n%s\n%s\n<main id="contenu">\n%s\n</main>\n%s\n'
             '%s<script src="assets/js/auth.js" defer></script>\n<script src="assets/js/main.js" defer></script>\n<script src="assets/js/consent.js" defer></script>\n</body>\n</html>\n'
             % (T('Aller au contenu', 'Skip to content'), member_header() if member else header(home, brand_href),
                '' if member else drawer(home, brand_href), honey(), main, footer(home, brand_href), scripts))
-    with open(os.path.join(DIST, fname), 'w', encoding='utf-8') as f:
-        f.write(head(title_fr, title_en, desc_fr, fname, noindex, base) + body)
+    html = head(title_fr, title_en, desc_fr, fname, noindex, base) + body
+    out = DIST
+    if MODE == 'en':
+        html = localize_en(html)
+        out = os.path.join(DIST, 'en')
+        os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, fname), 'w', encoding='utf-8') as f:
+        f.write(html)
 
 
 def section_head(title, lead=None, eyebrow=None, h='h2'):
@@ -587,8 +755,7 @@ class Form:
                 % (self.fid(n), T(fr, en), ' <span class="req" aria-hidden="true">*</span>' if req else '', self.fid(n), n, ' required' if req else '', p))
 
     def sel(self, n, fr, en, options, req=False, show_when=None):
-        opts = '<option value="" data-text-fr="Choisir…" data-text-en="Choose…">Choisir…</option>' + ''.join(
-            '<option value="%s" data-text-fr="%s" data-text-en="%s">%s</option>' % (attr(v), attr(ofr), attr(oen), ofr) for v, ofr, oen in options)
+        opts = opt('', 'Choisir…', 'Choose…') + ''.join(opt(v, ofr, oen) for v, ofr, oen in options)
         sw = ' data-show-when="%s"' % show_when if show_when else ''
         return ('<div class="field"%s><label for="%s">%s%s</label><select id="%s" name="%s"%s>%s</select></div>'
                 % (sw, self.fid(n), T(fr, en), ' <span class="req" aria-hidden="true">*</span>' if req else '', self.fid(n), n, ' required' if req else '', opts))
@@ -610,12 +777,12 @@ class Form:
     def wrap(self, inner, submit=('Envoyer ma demande', 'Send my request'), note=None):
         n = '<p class="form-note">%s</p>' % T(*note) if note else ''
         return ('<form class="form" name="{name}" method="POST" action="merci.html" data-netlify="true" netlify-honeypot="bot-field" data-form>'
-                '<input type="hidden" name="form-name" value="{name}"><input type="hidden" name="langue" value="fr">'
+                '<input type="hidden" name="form-name" value="{name}"><input type="hidden" name="langue" value="{lang}">'
                 '<p class="hp" aria-hidden="true"><label>Ne pas remplir <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>'
                 '{inner}{note}<label class="check"><input type="checkbox" name="consentement" value="oui" required> <span>{consent}</span></label>'
                 '<div><button class="btn btn-primary" type="submit">{submit}</button></div>'
                 '<p class="form-status" role="status" tabindex="-1">{status}</p></form>').format(
-            name=self.name, inner=inner, note=n,
+            name=self.name, inner=inner, note=n, lang='en' if MODE == 'en' else 'fr',
             consent=T("J'accepte que KAME GROUP utilise ces informations pour répondre à ma demande, comme l'explique sa "
                       '<a href="confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a>.',
                       'I agree that KAME GROUP may use this information to respond to my request, as explained in its '
@@ -672,8 +839,7 @@ def index_page():
   <div class="hex-pattern" aria-hidden="true"></div>
   <div class="container hero-inner">
     <div class="hero-text" data-reveal>
-      <p class="eyebrow">%(eyebrow)s</p>
-      <h1>%(h1)s</h1>
+      <h1 class="hero-title"><span class="hero-kicker">%(kicker)s</span><span class="hero-slogan">%(h1)s</span></h1>
       <p class="lead">%(lead)s</p>
       <div class="hero-actions"><a class="btn btn-light" href="#rejoindre" data-guest>%(cta1)s</a><a class="btn btn-outline-light" href="#outils">%(cta2)s</a></div>
     </div>
@@ -780,15 +946,16 @@ def index_page():
   </div>
 </section>
 ''' % dict(
-        eyebrow=T('Groupe technologique et financier · Né au Gabon', 'Technology and financial group · Born in Gabon'),
+        kicker=T('KAME GROUP, la fintech gabonaise qui rend les entreprises fiables et finançables',
+                 'KAME GROUP, the Gabonese fintech making businesses trustworthy and fundable'),
         h1=T('Un avenir sûr et éclairé.', 'A secure and bright future.'),
-        lead=T('KAME GROUP conçoit ses propres solutions et accompagne les entreprises, les institutions et les commerçants dans leur transformation, leur sécurisation et leur développement.',
-               'KAME GROUP designs its own solutions and supports businesses, institutions and merchants in their transformation, security and growth.'),
+        lead=T('Basée à Libreville, KAME GROUP conçoit ses propres solutions et accompagne les entreprises, les institutions, les commerçants et les investisseurs dans leur transformation, leur sécurisation et leur développement au Gabon.',
+               'Based in Libreville, KAME GROUP designs its own solutions and supports businesses, institutions, merchants and investors in their transformation, security and growth in Gabon.'),
         cta1=T('Devenir membre', 'Become a member'), cta2=T('Découvrir nos outils', 'Explore our tools'),
         hive=hive_scene(), edge=edge_svg(26, 'down'), hc=hc_shape(),
         about_t=T('Qui sommes-nous', 'About us'),
-        about_1=T('KAME GROUP est un groupe technologique et financier né au Gabon. Nous concevons nos propres produits et développons des solutions adaptées aux besoins des entreprises, des institutions et des populations.',
-                  'KAME GROUP is a technology and financial group born in Gabon. We design our own products and develop solutions tailored to the needs of businesses, institutions and communities.'),
+        about_1=T('KAME GROUP est un groupe technologique et financier né au Gabon et basé à Libreville. Nous concevons nos propres produits et développons des solutions adaptées aux besoins des entreprises, des institutions et des populations.',
+                  'KAME GROUP is a technology and financial group born in Gabon and based in Libreville. We design our own products and develop solutions tailored to the needs of businesses, institutions and communities.'),
         about_2=T('Notre mission : concevoir et déployer des solutions technologiques et financières adaptées aux réalités du Gabon, pour développer, sécuriser et créer de nouvelles opportunités.',
                   "Our mission: to design and deploy technology and financial solutions suited to Gabon's realities, to grow, secure and create new opportunities."),
         about_3=T("Notre ambition : devenir une référence au Gabon, puis dans toute l'Afrique centrale.",
@@ -920,9 +1087,9 @@ def account_section(key):
                ROLE_OF[key], T('Créer mon compte', 'Create my account'), T("J'ai déjà un compte", 'I already have an account'), li))
 
 
-def profile_page(fname, key, title, lead, eyebrow_sec, feat, extra_sections, step_items, form_html, title_meta, desc_meta, bee_icon, bee_extra='', bee_ant=True):
+def profile_page(fname, key, title, lead, eyebrow_sec, feat, extra_sections, step_items, form_html, title_meta, desc_meta, bee_icon, bee_extra='', bee_ant=True, h1=None):
     # form_html : ancien formulaire de demande, remplacé par la création de compte (gardé pour mémoire)
-    hero = page_hero(T(*title), T('Devenir membre', 'Become a member'), T(*title), T(*lead),
+    hero = page_hero(T(*title), T('Devenir membre', 'Become a member'), T(*(h1 or title)), T(*lead),
                      '<a class="btn btn-light" href="connexion.html?profil=%s#inscription" data-guest>%s</a>'
                      '<a class="btn btn-outline-light" href="index.html#rejoindre" data-guest>%s</a>'
                      % (ROLE_OF[key], T('Créer mon compte', 'Create my account'), T('Tous les profils', 'All profiles')),
@@ -943,6 +1110,35 @@ def callout(eyebrow, title, text, cta_html='', anchor=''):
     return ('<section class="section callout-sec"%s><div class="container"><div class="callout hc hc-dark" data-hc="16" data-reveal>%s<div class="hc-content">'
             '<p class="eyebrow" style="color:#9FE1DA">%s</p><h2 class="title h2">%s</h2><p class="lead" style="color:rgba(255,255,255,.9)">%s</p>%s</div></div></div></section>'
             % (a, hc_shape(), T(*eyebrow), T(*title), T(*text), cta_html))
+
+
+def faq_section(title, items):
+    qa = ''.join('<details class="faq-item"><summary>%s</summary><div class="faq-a"><p>%s</p></div></details>' % (T(*q), T(*a))
+                 for q, a in items)
+    return ('<section class="section faq-sec"><div class="container">%s<div class="faq" data-reveal>%s</div></div></section>'
+            % (section_head(title), qa))
+
+
+INVESTOR_FAQ = [
+    (("Comment investir dans une PME au Gabon avec KAME GROUP ?", 'How do I invest in a Gabonese SME with KAME GROUP?'),
+     ("Créez votre compte investisseur. Notre équipe vérifie votre profil, puis vous accédez à votre espace : entreprises vérifiées, KAME Score, données et opportunités. Quand un projet vous intéresse, vous manifestez votre intérêt et KAME GROUP vous met en relation avec l'entreprise.",
+      'Create your investor account. Our team checks your profile, then you access your space: verified businesses, KAME Score, data and opportunities. When a project interests you, you express your interest and KAME GROUP puts you in touch with the business.')),
+    (("Qu'est-ce que le KAME Score ?", 'What is the KAME Score?'),
+     ("Une note de fiabilité sur 100, classée de A à E. Elle combine la régularité des revenus, l'historique de paiement, le niveau d'endettement, l'ancienneté et la conformité de l'entreprise, à partir des données qu'elle partage avec son accord.",
+      'A reliability rating out of 100, graded from A to E. It combines revenue regularity, payment history, debt level, track record and compliance, based on data the business shares with its consent.')),
+    (("Comment KAME GROUP vérifie-t-il les entreprises ?", 'How does KAME GROUP check businesses?'),
+     ("Avec KAME ID : nous vérifions l'identité des dirigeants et les documents officiels de l'entreprise (RCCM, NIF) avant qu'elle n'apparaisse dans l'annuaire.",
+      "With KAME ID: we check the directors' identity and the company's official documents (RCCM, NIF) before it appears in the directory.")),
+    (("L'argent passe-t-il par KAME GROUP ?", 'Does the money go through KAME GROUP?'),
+     ("Non. KAME GROUP met en relation les investisseurs et les entreprises. Les paiements passent par la PayTech ou la banque que vous choisissez.",
+      'No. KAME GROUP connects investors and businesses. Payments go through the PayTech or bank you choose.')),
+    (("Puis-je investir directement dans KAME GROUP ?", 'Can I invest in KAME GROUP itself?'),
+     ("Oui. Après la vérification de votre profil et la signature d'un accord de confidentialité, vous recevez notre présentation investisseurs et rencontrez la direction.",
+      'Yes. Once your profile has been checked and a confidentiality agreement signed, you receive our investor presentation and meet management.')),
+    (("Les informations de KAME GROUP sont-elles un conseil en investissement ?", "Is KAME GROUP's information investment advice?"),
+     ("Non. Les indicateurs sont fournis à titre d'information. Investir comporte des risques et KAME GROUP ne promet aucun rendement.",
+      'No. Indicators are provided for information only. Investing involves risk and KAME GROUP does not promise any return.')),
+]
 
 
 def note_section(html_note):
@@ -1077,7 +1273,8 @@ def build_profiles():
          (('Votre identifiant', 'Your member ID'), ('Vous recevez votre identifiant KAME (KG-ENT-…) et l\'accès à votre espace.', 'You receive your KAME ID (KG-ENT-…) and access to your space.')),
          (('La mise en place', 'Set-up'), ('Nous mettons en place les outils choisis avec vos équipes.', 'We set up the chosen tools with your teams.'))],
         form, ('Entreprise | KAME GROUP', 'Business | KAME GROUP'),
-        "Entreprises : identité numérique, conformité, cybersécurité, blockchain, données et analyse de solvabilité avec KAME GROUP.", 'business')
+        "Entreprises : identité numérique, conformité, cybersécurité, blockchain, données et analyse de solvabilité avec KAME GROUP.", 'business',
+        h1=('Faites grandir votre entreprise au Gabon', 'Grow your business in Gabon'))
 
     # Investisseur
     f = Form('inscription-investisseur')
@@ -1093,8 +1290,8 @@ def build_profiles():
         f.area('message', 'Un message (facultatif)', 'A message (optional)'), note=DOCS_NOTE)
     profile_page(
         'investisseur.html', 'investor', ('Investisseur', 'Investor'),
-        ("Vous souhaitez financer KAME GROUP ou l'un de ses projets ? Voici comment nous travaillons avec les investisseurs.",
-         'Would you like to fund KAME GROUP or one of its projects? Here is how we work with investors.'),
+        ("Découvrez des entreprises gabonaises vérifiées et notées par KAME, ou financez directement KAME GROUP et ses projets. Voici comment nous travaillons avec les investisseurs.",
+         'Discover Gabonese businesses verified and rated by KAME, or fund KAME GROUP and its projects directly. Here is how we work with investors.'),
         ('Ce que nous vous proposons', 'What we offer you'),
         features([
             ('investor', ('La présentation investisseurs', 'The investor presentation'),
@@ -1107,17 +1304,39 @@ def build_profiles():
              ("KAME Score pour évaluer la fiabilité d'une entreprise, KAME Registre pour suivre les échanges de façon traçable.",
               'KAME Score to assess how reliable a business is, KAME Registre to follow exchanges in a traceable way.')),
         ]),
+        '<section class="section invest-sec"><div class="container">%s%s</div></section>' % (
+            section_head(('Investir dans les PME du Gabon', 'Investing in Gabonese SMEs'),
+                         ("Votre espace investisseur, en cours de lancement, réunit ce qu'il faut pour choisir en confiance.",
+                          'Your investor space, now launching, brings together what you need to choose with confidence.')),
+            features([
+                ('id', ('Des entreprises vérifiées', 'Verified businesses'),
+                 ("Chaque entreprise est vérifiée avec KAME ID : identité des dirigeants et documents officiels (RCCM, NIF).",
+                  "Every business is checked with KAME ID: directors' identity and official documents (RCCM, NIF).")),
+                ('score', ('Le KAME Score', 'The KAME Score'),
+                 ("Une note de fiabilité sur 100, de A à E, calculée à partir des données que l'entreprise partage avec son accord.",
+                  'A reliability rating out of 100, from A to E, based on data the business shares with its consent.')),
+                ('data', ('KAME Data', 'KAME Data'),
+                 ("L'évolution de l'activité de chaque entreprise, comparée à son secteur.", "Each business's activity over time, compared with its sector.")),
+                ('registre', ('KAME Registre', 'KAME Registre'),
+                 ('Les opérations clés enregistrées de façon infalsifiable, et la vérification des documents.',
+                  'Key operations recorded in a tamper-proof way, and document verification.')),
+                ('investor', ("Des opportunités d'investissement", 'Investment opportunities'),
+                 ('Les projets des entreprises qui cherchent un financement : prêt ou prise de participation.',
+                  'Projects from businesses seeking funding: loans or equity stakes.')),
+            ])) +
         callout(('Paiements', 'Payments'), ('Payez avec la PayTech de votre choix', 'Pay with the PayTech of your choice'),
                 ("Pour vos opérations avec les entreprises du réseau, vous choisirez parmi nos PayTech gabonaises partenaires (partenaires à venir). Les paiements passent par la PayTech que vous choisissez.",
                  'For your transactions with businesses in the network, you will choose among our partner Gabonese PayTechs (partners coming soon). Payments go through the PayTech you choose.')) +
         note_section('<p class="notice">%s</p>' % T("<strong>Important :</strong> investir comporte des risques. KAME GROUP ne promet aucun rendement. L'accès aux opportunités se fait après vérification de votre profil, dans le respect de la réglementation en vigueur.",
-                                                   '<strong>Important:</strong> investing involves risk. KAME GROUP does not promise any return. Access to opportunities is granted after your profile has been checked, in line with applicable regulations.')),
+                                                   '<strong>Important:</strong> investing involves risk. KAME GROUP does not promise any return. Access to opportunities is granted after your profile has been checked, in line with applicable regulations.')) +
+        faq_section(('Questions fréquentes', 'Frequently asked questions'), INVESTOR_FAQ),
         [(('Votre demande', 'Your request'), ('Vous remplissez le formulaire ci-dessous.', 'You fill in the form below.')),
          (('La vérification', 'Verification'), ('Notre équipe vérifie votre profil.', 'Our team checks your profile.')),
          (('La confidentialité', 'Confidentiality'), ('Nous signons ensemble un accord de confidentialité.', 'We sign a confidentiality agreement together.')),
          (('Les échanges', 'Next steps'), ('Vous accédez aux documents et rencontrez la direction. Identifiant : KG-INV-…', 'You access the documents and meet management. Member ID: KG-INV-…'))],
         form, ('Investisseur | KAME GROUP', 'Investor | KAME GROUP'),
-        "Investisseurs : découvrez comment KAME GROUP travaille avec ses investisseurs.", 'investor', P_GLASSES)
+        "Investisseurs : découvrez comment KAME GROUP travaille avec ses investisseurs.", 'investor', P_GLASSES,
+        h1=('Investir au Gabon en toute confiance', 'Invest in Gabon with confidence'))
 
 
 def build_other_pages():
@@ -1158,6 +1377,8 @@ def build_other_pages():
                          ('Laissez-nous vos coordonnées : nous vous préviendrons dès l\'ouverture des premières formations.', 'Leave us your details: we will let you know as soon as the first sessions open.')))
     page('formations.html', 'Formations | KAME GROUP', 'Training | KAME GROUP', 'Formations KAME GROUP pour les équipes des entreprises membres (projet à venir).', main)
 
+
+def build_app_pages():
     # Merci
     main = ('<section class="page-hero" id="accueil"><div class="hex-pattern" aria-hidden="true"></div><div class="container page-hero-inner">'
             '<div class="page-hero-text" data-reveal><p class="eyebrow">KAME GROUP</p><h1>%s</h1><p class="lead">%s</p>'
@@ -1200,9 +1421,7 @@ def pick_profiles(prefix):
         '<label class="pick"><input type="radio" name="profil" value="%s" required>'
         '<span class="pick-box"><span class="hex-icon">%s</span><span class="pick-name">%s</span></span></label>'
         % (ROLE_OF[p['key']], icon(p['key'], 22), T(*p['name'])) for p in PROFILES)
-    opts = '<option value="" data-text-fr="Aucun" data-text-en="None">Aucun</option>' + ''.join(
-        '<option value="%s" data-text-fr="%s" data-text-en="%s">%s</option>' % (ROLE_OF[p['key']], p['name'][0], p['name'][1], p['name'][0])
-        for p in PROFILES)
+    opts = opt('', 'Aucun', 'None') + ''.join(opt(ROLE_OF[p['key']], p['name'][0], p['name'][1]) for p in PROFILES)
     return ('<fieldset class="field"><legend>%s%s</legend><div class="profile-pick">%s</div></fieldset>'
             '<div class="field"><label for="%s-profil2">%s</label><select id="%s-profil2" name="profil2">%s</select>'
             '<p class="field-hint">%s</p></div>'
@@ -1213,8 +1432,7 @@ def pick_profiles(prefix):
 def account_details(prefix):
     agri = ''.join('<label class="check"><input type="radio" name="agriculture" value="%s" required> <span>%s</span></label>' % (v, T(fr, en))
                    for v, fr, en in AGRI_CHOICES)
-    types = '<option value="" data-text-fr="Choisir…" data-text-en="Choose…">Choisir…</option>' + ''.join(
-        '<option value="%s" data-text-fr="%s" data-text-en="%s">%s</option>' % (v, fr, en, fr) for v, fr, en in AGRI_TYPES)
+    types = opt('', 'Choisir…', 'Choose…') + ''.join(opt(v, fr, en) for v, fr, en in AGRI_TYPES)
     return (afield(prefix, 'structure', 'Nom de votre entreprise ou structure', 'Name of your company or organisation', ac='organization',
                    hint=('Facultatif si vous êtes commerçant(e) indépendant(e).', 'Optional if you are an independent merchant.')) +
             '<div class="form-row">%s%s</div>' % (
@@ -1499,9 +1717,16 @@ def build_icons_js():
 
 
 def build_seo_files():
-    urls = ''.join('  <url>\n    <loc>%s</loc>\n    <lastmod>%s</lastmod>\n  </url>\n' % (page_url(f), UPDATED) for f in SITEMAP_PAGES)
+    alts = (('fr', 'fr'), ('en', 'en'), ('x-default', 'fr'))
+
+    def entry(fname, lang):
+        links = ''.join('    <xhtml:link rel="alternate" hreflang="%s" href="%s"/>\n' % (hl, page_url(fname, l)) for hl, l in alts) \
+            if fname in PUBLIC_PAGES else ''
+        return '  <url>\n    <loc>%s</loc>\n    <lastmod>%s</lastmod>\n%s  </url>\n' % (page_url(fname, lang), UPDATED, links)
+    urls = ''.join(entry(f, 'fr') + (entry(f, 'en') if f in PUBLIC_PAGES else '') for f in SITEMAP_PAGES)
     with open(os.path.join(DIST, 'sitemap.xml'), 'w', encoding='utf-8') as f:
-        f.write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n%s</urlset>\n' % urls)
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+                'xmlns:xhtml="http://www.w3.org/1999/xhtml">\n%s</urlset>\n' % urls)
     with open(os.path.join(DIST, 'robots.txt'), 'w', encoding='utf-8') as f:
         f.write('User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n' % SITE_URL)
 
@@ -1684,7 +1909,8 @@ def build_legal_pages():
                        (T('Adresse', 'Address'), LEGAL_ADDRESS)]:
         if val:
             rows.append((label, val))
-    ident = '<ul>%s</ul>' % ''.join('<li><strong>%s</strong> : %s</li>' % r for r in rows)
+    sep = ': ' if MODE == 'en' else '&#8239;: '
+    ident = '<ul>%s</ul>' % ''.join('<li><strong>%s</strong>%s%s</li>' % (r[0], sep, r[1]) for r in rows)
     legal_page('mentions-legales.html', ('Mentions légales', 'Legal notice'), ('Mentions légales', 'Legal notice'),
                ('Qui édite et héberge ce site.', 'Who publishes and hosts this website.'),
                NOTICE, ('Mentions légales', 'Legal notice'), 'Mentions légales de KAME GROUP : éditeur, responsable de la publication, hébergeur et crédits.',
@@ -1713,14 +1939,21 @@ def build_legal_pages():
          hero + '<section class="section"><div class="container"><article class="legal" data-reveal>%s</article></div></section>' % body)
 
 
-if __name__ == '__main__':
-    os.makedirs(DIST, exist_ok=True)
+def build_public_pages():
     index_page()
     build_profiles()
     build_other_pages()
-    build_auth_pages()
     build_privacy()
     build_legal_pages()
+
+
+if __name__ == '__main__':
+    os.makedirs(DIST, exist_ok=True)
+    for MODE in ('fr', 'en'):
+        build_public_pages()
+    MODE = 'bi'
+    build_app_pages()
+    build_auth_pages()
     build_seo_files()
     build_icons_js()
     print('OK', sorted(f for f in os.listdir(DIST) if f.endswith(('.html', '.xml', '.txt'))))

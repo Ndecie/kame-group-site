@@ -127,7 +127,7 @@
   // Les liens des e-mails (confirmation, mot de passe) et le retour de Google arrivent sur la page d'accueil :
   // on les transmet à la page de connexion.
   if (hashData && !authRoot) {
-    location.replace('connexion.html' + location.hash);
+    location.replace('/connexion.html' + location.hash);
     return;
   }
 
@@ -190,7 +190,7 @@
         show('complete');
         return;
       }
-      location.replace('espace-membre.html');
+      location.replace('/espace-membre.html');
     }
     function formData(form) {
       var o = {};
@@ -287,7 +287,7 @@
         var provider = (u && u.app_metadata && u.app_metadata.provider) || 'google';
         return notify(meta, u.email, provider).then(function () {
           store(PENDING_PROFILE, null);
-          location.replace('espace-membre.html');
+          location.replace('/espace-membre.html');
         });
       });
     });
@@ -299,7 +299,7 @@
       });
     });
     onSubmit('form-reset', function (f, d) {
-      return updateUser({ password: d.password }).then(function () { location.replace('espace-membre.html'); });
+      return updateUser({ password: d.password }).then(function () { location.replace('/espace-membre.html'); });
     });
     onSubmit('form-invite', function (f, d) {
       return verify('signup', inviteToken, d.password).then(getUser).then(route);
@@ -371,7 +371,7 @@
 
     function render(u) {
       var m = u.user_metadata || {};
-      if (!m.profil) { location.replace('connexion.html'); return; }
+      if (!m.profil) { location.replace('/connexion.html'); return; }
       var first = firstName(u);
       document.querySelectorAll('[data-first-name]').forEach(function (el) { el.textContent = first; });
       document.querySelectorAll('[data-initial]').forEach(function (el) { el.textContent = (first.charAt(0) || 'K').toUpperCase(); });
@@ -462,7 +462,7 @@
     function refresh() {
       show('loading');
       return settings().then(getUser).then(function (u) {
-        if (!u) { location.replace('connexion.html'); return; }
+        if (!u) { location.replace('/connexion.html'); return; }
         render(u);
       }).catch(function (e) {
         console.warn('[KAME] Netlify Identity indisponible', e);
@@ -472,7 +472,10 @@
 
     root.querySelectorAll('[data-refresh]').forEach(function (b) { b.addEventListener('click', refresh); });
     document.querySelectorAll('[data-logout]').forEach(function (b) {
-      b.addEventListener('click', function () { logout().then(function () { location.replace('index.html'); }); });
+      b.addEventListener('click', function () {
+        // Déconnexion : retour à l'accueil du site, dans la langue choisie
+        logout().then(function () { location.replace(document.documentElement.lang === 'en' ? '/en/' : '/'); });
+      });
     });
     refresh();
   }

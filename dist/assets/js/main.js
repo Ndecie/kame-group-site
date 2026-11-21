@@ -26,7 +26,27 @@
     var t = document.querySelector('meta[name="title-' + lang + '"]');
     if (t) document.title = t.getAttribute('content');
     document.querySelectorAll('input[name="langue"]').forEach(function (i) { i.value = lang; });
+    localizeLinks(lang);
     scheduleShapes();
+  }
+
+  /* Pages de l'application (connexion, espace membre) : les liens vers les pages publiques
+     mènent à la version française (racine) ou anglaise (/en/) selon la langue choisie */
+  var PUBLIC_PAGES = ['index', 'investisseur', 'entreprise', 'commercant', 'partenaire', 'formations', 'confidentialite',
+    'conditions-utilisation', 'cookies', 'mentions-legales', 'tarifs-remboursements', 'accessibilite', 'suppression-donnees', 'plan-du-site'];
+  function localizeLinks(lang) {
+    if (root.hasAttribute('data-lang-fixed')) return;
+    document.querySelectorAll('a[href]').forEach(function (a) {
+      var raw = a.getAttribute('href');
+      if (!raw || raw.charAt(0) === '#' || /^[a-z]+:/i.test(raw)) return;
+      var u;
+      try { u = new URL(raw, document.baseURI); } catch (e) { return; }
+      if (u.origin !== location.origin) return;
+      var name = u.pathname.replace(/^\/en(?=\/|$)/, '').replace(/^\/+/, '').replace(/\.html$/, '').replace(/\/+$/, '') || 'index';
+      if (PUBLIC_PAGES.indexOf(name) < 0) return;
+      var path = name === 'index' ? '/' : '/' + name + '.html';
+      a.setAttribute('href', (lang === 'en' ? '/en' + path : path) + u.hash);
+    });
   }
   document.querySelectorAll('[data-set-lang]').forEach(function (b) {
     b.addEventListener('click', function () { applyLang(b.getAttribute('data-set-lang')); });
