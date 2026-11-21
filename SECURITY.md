@@ -17,4 +17,4 @@ Utilisez le formulaire de contact de https://kamegroupe.com (sujet « Sécurité
 ## Règles pour les contributions
 1. Ne jamais commiter de secret (`.env`, clés, jetons).
 2. Toute vérification d'accès aux données se fait côté serveur, jamais seulement dans le navigateur.
-3. Garder les dépendances à jour (alertes Dependabot activées).
+3. Garder les dépendances à jour : le site n'en a aucune aujourd'hui ; activer les alertes Dependabot dès qu'on en ajoutera.
