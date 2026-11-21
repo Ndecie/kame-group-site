@@ -353,7 +353,12 @@
 
   // ------------------------------------------------------------ espace membre
   function initSpace(root) {
-    function show(name) { root.querySelectorAll('.space-panel').forEach(function (p) { p.hidden = p.id !== 'space-' + name; }); }
+    function show(name) {
+      root.querySelectorAll('.space-panel').forEach(function (p) { p.hidden = p.id !== 'space-' + name; });
+      // Espace investisseur : mise en page large et éléments du bandeau réservés (recherche, notifications)
+      root.classList.toggle('space-wide', name === 'investor');
+      document.documentElement.classList.toggle('inv-on', name === 'investor');
+    }
     function label(r) { return r && ROLES[r] ? tx(ROLES[r].fr, ROLES[r].en) : '—'; }
     function firstName(u) {
       var n = (u.user_metadata && u.user_metadata.full_name) || (u.email || '').split('@')[0];
@@ -367,7 +372,10 @@
     function render(u) {
       var m = u.user_metadata || {};
       if (!m.profil) { location.replace('connexion.html'); return; }
-      root.querySelectorAll('[data-first-name]').forEach(function (el) { el.textContent = firstName(u); });
+      var first = firstName(u);
+      document.querySelectorAll('[data-first-name]').forEach(function (el) { el.textContent = first; });
+      document.querySelectorAll('[data-initial]').forEach(function (el) { el.textContent = (first.charAt(0) || 'K').toUpperCase(); });
+      document.querySelectorAll('[data-email]').forEach(function (el) { el.textContent = u.email || ''; });
       var roles = ((u.app_metadata && u.app_metadata.roles) || []).filter(function (r) { return ROLES[r]; });
       roles.sort(function (a, b) { return ROLE_ORDER.indexOf(a) - ROLE_ORDER.indexOf(b); });
 
@@ -402,8 +410,53 @@
         tabsEl.hidden = true;
       }
       root.classList.toggle('has-agro', m.agriculture === 'oui');
-      pick(roles[0]);
-      show('dash');
+
+      // Espace investisseur (nouveau tableau de bord) ; les autres profils gardent leur espace actuel
+      window.KAME_SPACE = {
+        firstName: first, fullName: m.full_name || '', email: u.email || '', roles: roles,
+        ids: roles.reduce(function (o, r) { o[r] = memberId(u, r); return o; }, {}),
+        structure: m.structure || '', ville: m.ville || '', agriculture: m.agriculture === 'oui'
+      };
+      function roleLabel(r) {
+        document.querySelectorAll('[data-role-label]').forEach(function (el) { el.innerHTML = label(r); });
+      }
+      function showRole(r) {
+        roleLabel(r);
+        // Menu du compte : l'espace ouvert est marqué comme actuel
+        document.querySelectorAll('[data-space-role]').forEach(function (el) {
+          el.setAttribute('aria-current', String(el.getAttribute('data-space-role') === r));
+        });
+        if (r === 'investisseur') {
+          show('investor');
+          document.dispatchEvent(new CustomEvent('kame:investor', { detail: window.KAME_SPACE }));
+        } else {
+          pick(r);
+          show('dash');
+        }
+      }
+      window.KAME_SHOW_ROLE = showRole;
+      var spaces = document.querySelector('[data-other-spaces]');
+      if (spaces) {
+        if (roles.length > 1) {
+          spaces.innerHTML = '<p class="mh-spaces-title">' + tx('Mes espaces', 'My spaces') + '</p>' + roles.map(function (r) {
+            return '<button type="button" data-space-role="' + r + '">' + label(r) + '</button>';
+          }).join('');
+          spaces.querySelectorAll('[data-space-role]').forEach(function (b) {
+            b.addEventListener('click', function () { showRole(b.getAttribute('data-space-role')); });
+          });
+          spaces.hidden = false;
+        } else {
+          spaces.hidden = true;
+        }
+      }
+      if (roles.length > 1) {
+        tabsEl.querySelectorAll('button').forEach(function (b) {
+          if (b.getAttribute('data-role') === 'investisseur') {
+            b.addEventListener('click', function (e) { e.stopImmediatePropagation(); showRole('investisseur'); }, true);
+          }
+        });
+      }
+      showRole(roles[0]);
     }
 
     function refresh() {
@@ -418,7 +471,7 @@
     }
 
     root.querySelectorAll('[data-refresh]').forEach(function (b) { b.addEventListener('click', refresh); });
-    root.querySelectorAll('[data-logout]').forEach(function (b) {
+    document.querySelectorAll('[data-logout]').forEach(function (b) {
       b.addEventListener('click', function () { logout().then(function () { location.replace('index.html'); }); });
     });
     refresh();

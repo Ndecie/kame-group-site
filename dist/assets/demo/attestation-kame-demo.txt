@@ -1,0 +1,10 @@
+KAME GROUP - DOCUMENT DE DEMONSTRATION
+
+Attestation fictive : livraison de 12 tonnes de manioc
+Entreprise (fictive) : Cooperative Agro de Ndjole
+Date : 14 octobre 2026
+
+Ce document sert uniquement a essayer l'outil KAME Registre.
+Son empreinte numerique est enregistree dans le registre de demonstration :
+si vous le verifiez sans le modifier, il est reconnu comme authentique.
+Modifiez une seule lettre et l'empreinte change : le document n'est plus reconnu.

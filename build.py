@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Génère le site statique KAME GROUP (FR/EN) dans dist/.
 Toutes les pages partagent le même en-tête, le même pied de page et le même style."""
+import json
 import math
 import os
 import html as H
@@ -56,6 +57,31 @@ def bi_attr(name, fr, en):
 
 # ---------------------------------------------------------------- icônes (24 x 24, trait)
 ICONS = {
+    'home': '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/>',
+    'search': '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    'bell': '<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    'user': '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/>',
+    'help': '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7v.5"/><path d="M12 17h.01"/>',
+    'logout': '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="m10 17-5-5 5-5"/><path d="M5 12h11"/>',
+    'chevron': '<path d="m6 9 6 6 6-6"/>',
+    'briefcase': '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/>',
+    'building': '<rect x="4" y="3" width="10" height="18" rx="1"/><path d="M14 9h5a1 1 0 0 1 1 1v11h-6"/><path d="M7.5 7h3M7.5 11h3M7.5 15h3"/>',
+    'target': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>',
+    'trend': '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    'trenddown': '<path d="m3 7 6 6 4-4 8 8"/><path d="M15 17h6v-6"/>',
+    'lock': '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    'file': '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+    'upload': '<path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/>',
+    'star': '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+    'shield': '<path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/>',
+    'clock': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    'sun': '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    'heart': '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+    'truck': '<path d="M3 6h11v10H3z"/><path d="M14 9h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+    'pie': '<path d="M12 3v9h9"/><path d="M20.5 15A9 9 0 1 1 9 3.5"/>',
+    'bookmark': '<path d="M6 3h12v18l-6-4-6 4z"/>',
+    'info': '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>',
+    'ok': '<path d="m5 12.5 4.5 4.5L19 7"/>',
     'id': '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16.2c.6-1.6 1.8-2.4 3.2-2.4s2.6.8 3.2 2.4"/><path d="M14.5 10h4"/><path d="M14.5 13.5h3"/>',
     'check': '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 14.5 2 2 4-4"/>',
     'garde': '<path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10 11V9.5a2 2 0 0 1 4 0V11"/>',
@@ -419,6 +445,35 @@ def header(home, brand_href=None):
                bi_attr('aria-label', 'Ouvrir le menu', 'Open the menu'), icon('menu', 24, 2), edge_svg(12, 'down')))
 
 
+def member_header():
+    # Banderole de l'espace membre : logo, recherche, notifications, langue et compte
+    links = [
+        ('#profil', 'user', 'Mon profil', 'My profile', ' data-inv-only'),
+        ('#portefeuille', 'briefcase', 'Mon portefeuille', 'My portfolio', ' data-inv-only'),
+        ('index.html#contact', 'help', 'Aide et support', 'Help &amp; support', ''),
+        ('index.html', 'home', 'Voir le site KAME GROUP', 'Visit the KAME GROUP site', ''),
+    ]
+    menu = ('<div class="mh-menu-head"><span class="mh-avatar" data-initial>K</span><div><strong data-first-name></strong>'
+            '<small data-email></small></div></div>'
+            + ''.join('<a href="%s"%s>%s<span>%s</span></a>' % (u, extra, icon(ic, 19, 1.9), T(fr, en)) for u, ic, fr, en, extra in links)
+            + '<div class="mh-spaces" data-other-spaces hidden></div>'
+            + '<div class="mh-lang">%s</div>' % lang_switch()
+            + '<button type="button" class="mh-logout" data-logout>%s<span>%s</span></button>' % (icon('logout', 19, 1.9), T('Se déconnecter', 'Log out')))
+    return ('<header class="site-header member-header"><div class="container container-wide header-inner">%s'
+            '<form class="mh-search" role="search" data-inv-only><label class="sr-only" for="mh-q">%s</label>%s'
+            '<input id="mh-q" type="search" autocomplete="off" %s></form>'
+            '<div class="mh-actions"><div class="mh-lang-top">%s</div>'
+            '<div class="mh-pop" data-inv-only><button type="button" class="mh-icon-btn mh-bell" aria-expanded="false" aria-controls="mh-notifs" %s>'
+            '%s<span class="mh-count" data-notif-count hidden></span></button><div class="mh-panel mh-notifs" id="mh-notifs" hidden></div></div>'
+            '<div class="mh-pop"><button type="button" class="mh-me" aria-expanded="false" aria-controls="mh-menu">'
+            '<span class="mh-avatar" data-initial>K</span><span class="mh-who"><strong data-first-name></strong><small data-role-label></small></span>%s</button>'
+            '<div class="mh-panel mh-menu" id="mh-menu" hidden>%s</div></div></div></div>%s</header>'
+            % (brand('espace-membre.html'), T('Rechercher', 'Search'), icon('search', 20, 2),
+               bi_attr('placeholder', 'Rechercher une entreprise, un secteur, une ville…', 'Search a company, a sector, a city…'),
+               lang_switch(), bi_attr('aria-label', 'Notifications', 'Notifications'), icon('bell', 22, 1.9),
+               icon('chevron', 18, 2), menu, edge_svg(12, 'down')))
+
+
 def drawer(home, brand_href=None):
     h = home
     links = [
@@ -486,11 +541,11 @@ def footer(home, brand_href=None):
                legal_links()))
 
 
-def page(fname, title_fr, title_en, desc_fr, main, home='index.html', noindex=False, base=None, brand_href=None):
+def page(fname, title_fr, title_en, desc_fr, main, home='index.html', noindex=False, base=None, brand_href=None, member=False, scripts=''):
     body = ('<body>\n<a class="skip-link" href="#contenu">%s</a>\n%s\n%s\n%s\n<main id="contenu">\n%s\n</main>\n%s\n'
-            '<script src="assets/js/auth.js" defer></script>\n<script src="assets/js/main.js" defer></script>\n<script src="assets/js/consent.js" defer></script>\n</body>\n</html>\n'
-            % (T('Aller au contenu', 'Skip to content'), header(home, brand_href), drawer(home, brand_href), honey(), main,
-               footer(home, brand_href)))
+            '%s<script src="assets/js/auth.js" defer></script>\n<script src="assets/js/main.js" defer></script>\n<script src="assets/js/consent.js" defer></script>\n</body>\n</html>\n'
+            % (T('Aller au contenu', 'Skip to content'), member_header() if member else header(home, brand_href),
+               '' if member else drawer(home, brand_href), honey(), main, footer(home, brand_href), scripts))
     with open(os.path.join(DIST, fname), 'w', encoding='utf-8') as f:
         f.write(head(title_fr, title_en, desc_fr, fname, noindex, base) + body)
 
@@ -1324,10 +1379,39 @@ def space_page():
               % (T("L'espace membre ouvre bientôt", 'The member area opens soon'),
                  T("La connexion n'est pas encore activée. Revenez dans quelques jours.", 'Sign-in is not switched on yet. Please come back in a few days.'),
                  T('Nous écrire', 'Write to us')))
-    hero = compact_hero(T('Espace membre', 'Member area'), T('Mon espace', 'My space'))
-    main = hero + '<section class="section section-tight"><div class="container"><div class="space" id="space">%s%s%s%s</div></div></section>' % (loading, pending, dash, closed)
+    main = ('<section class="section section-tight inv-section"><div class="container container-wide"><div class="space" id="space">%s%s%s%s%s</div></div></section>'
+            % (loading, pending, dash, investor_shell(), closed))
     page('espace-membre.html', 'Mon espace | KAME GROUP', 'My space | KAME GROUP', 'Espace membre KAME GROUP.', main, noindex=True,
-         brand_href='espace-membre.html')
+         brand_href='espace-membre.html', member=True,
+         scripts='<script src="assets/js/kame-icons.js" defer></script>\n<script src="assets/js/investor.js" defer></script>\n')
+
+
+INV_VIEWS = ['accueil', 'annuaire', 'opportunites', 'portefeuille', 'score', 'data', 'registre', 'profil', 'entreprise']
+
+
+def investor_shell():
+    # Espace investisseur : colonne d'outils + zone centrale (contenu rempli par investor.js)
+    def item(v, ic, fr, en, sub=False):
+        return '<a class="inv-nav-item%s" href="#%s" data-nav="%s">%s<span>%s</span></a>' % (' sub' if sub else '', v, v, icon(ic, 20, 1.9), T(fr, en))
+    nav = (item('accueil', 'home', 'Accueil', 'Home') + item('annuaire', 'building', 'Entreprises', 'Companies')
+           + item('opportunites', 'target', 'Opportunités', 'Opportunities')
+           + item('portefeuille', 'briefcase', 'Mon portefeuille', 'My portfolio')
+           + '<p class="inv-nav-label">%s</p>' % T('Outils KAME', 'KAME tools')
+           + item('score', 'score', 'KAME Score', 'KAME Score', True) + item('data', 'data', 'KAME Data', 'KAME Data', True)
+           + item('registre', 'registre', 'KAME Registre', 'KAME Registre', True))
+    side_card = ('<div class="inv-side-card">%s<p>%s</p><a class="btn btn-light btn-sm" href="#opportunites">%s</a></div>'
+                 % (presenter_bee('investor', cls='bee-mini'), T("Investir au Gabon, c'est bâtir demain.", 'Investing in Gabon is building tomorrow.'),
+                    T('Voir les opportunités', 'See opportunities')))
+    views = ''.join('<section class="inv-view" data-view="%s" hidden tabindex="-1"></section>' % v for v in INV_VIEWS)
+    return ('<div class="space-panel inv-shell" id="space-investor" hidden>'
+            '<aside class="inv-side"><nav class="inv-nav" %s>%s</nav>%s</aside>'
+            '<div class="inv-main"><div class="inv-mobile-search"><label class="sr-only" for="inv-q2">%s</label>%s'
+            '<input id="inv-q2" type="search" autocomplete="off" %s></div>'
+            '<p class="inv-ribbon">%s<span>%s</span></p>%s</div></div>'
+            % (bi_attr('aria-label', 'Espace investisseur', 'Investor space'), nav, side_card, T('Rechercher', 'Search'), icon('search', 18, 2),
+               bi_attr('placeholder', 'Rechercher une entreprise…', 'Search a company…'), icon('info', 18, 2),
+               T('Version de démonstration : les entreprises, les montants et les scores affichés sont fictifs.',
+                 'Demo version: the companies, amounts and scores shown are fictitious.'), views))
 
 
 def build_auth_pages():
@@ -1406,6 +1490,12 @@ def build_privacy():
     main = hero + '<section class="section"><div class="container"><article class="legal" data-reveal>%s</article></div></section>' % body
     page('confidentialite.html', 'Politique de confidentialité | KAME GROUP', 'Privacy policy | KAME GROUP',
          'Comment KAME GROUP collecte, utilise et protège vos informations : données collectées, utilisation, durée de conservation et vos droits.', main)
+
+
+def build_icons_js():
+    # Une seule source pour les icônes : build.py les écrit aussi pour investor.js
+    with open(os.path.join(DIST, 'assets', 'js', 'kame-icons.js'), 'w', encoding='utf-8') as f:
+        f.write('/* Généré par build.py : ne pas modifier à la main */\nwindow.KAME_ICONS = %s;\n' % json.dumps(ICONS, ensure_ascii=False))
 
 
 def build_seo_files():
@@ -1632,4 +1722,5 @@ if __name__ == '__main__':
     build_privacy()
     build_legal_pages()
     build_seo_files()
+    build_icons_js()
     print('OK', sorted(f for f in os.listdir(DIST) if f.endswith(('.html', '.xml', '.txt'))))

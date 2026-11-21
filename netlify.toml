@@ -17,8 +17,15 @@
     Cross-Origin-Opener-Policy = "same-origin-allow-popups"
 
 # Les pages privées ne sont jamais mises en cache ni indexées
+# (deux adresses : Netlify sert aussi la page sans « .html »)
 [[headers]]
   for = "/espace-membre.html"
+  [headers.values]
+    Cache-Control = "no-store"
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/espace-membre"
   [headers.values]
     Cache-Control = "no-store"
     X-Robots-Tag = "noindex"
