@@ -605,3 +605,14 @@ html.js [data-reveal][data-delay="3"] { transition-delay: .3s; }
 .legal fieldset legend { font-weight: 700; margin-bottom: 8px; }
 .legal .form { margin-top: 12px; }
 @media (max-width: 560px) { .cookie-notice { flex-direction: column; align-items: stretch; } }
+
+/* Visiteur ou membre connecté (classe is-member posée par lang.js) */
+.is-member [data-guest] { display: none !important; }
+html:not(.is-member) [data-member] { display: none !important; }
+
+/* Espace membre : bandeau fin, le tableau de bord apparaît tout de suite */
+.page-hero-compact .page-hero-inner { padding-top: 20px; padding-bottom: 60px; gap: 0; }
+.page-hero-compact .page-hero-text { gap: 4px; flex-basis: 100%; }
+.page-hero-compact h1 { font-size: clamp(26px, 3vw, 34px); }
+.section.section-tight { padding-top: 28px; }
+@media (max-width: 640px) { .page-hero-compact .page-hero-inner { padding-bottom: 52px; } .section.section-tight { padding-top: 20px; } }

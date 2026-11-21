@@ -36,9 +36,10 @@
     var s = { access_token: t.access_token, refresh_token: t.refresh_token,
               expires_at: Date.now() + (parseInt(t.expires_in, 10) || 3600) * 1000 };
     store(STORE, JSON.stringify(s));
+    document.documentElement.classList.add('is-member');
     return s;
   }
-  function clear() { store(STORE, null); }
+  function clear() { store(STORE, null); document.documentElement.classList.remove('is-member'); }
 
   // ------------------------------------------------------------ API Netlify Identity
   function request(path, opts) {
@@ -130,14 +131,8 @@
     return;
   }
 
-  // Connecté : « Se connecter » devient « Mon espace »
-  if (load()) {
-    document.querySelectorAll('a[href="connexion.html"]').forEach(function (a) {
-      if (authRoot && authRoot.contains(a)) return;
-      a.setAttribute('href', 'espace-membre.html');
-      a.innerHTML = tx('Mon espace', 'My space');
-    });
-  }
+  // Les boutons « Se connecter » / « Mon espace » et « Devenir membre » sont affichés selon la classe
+  // is-member (posée par lang.js et par save/clear ci-dessus), indépendamment de l'adresse des liens.
 
   if (authRoot) initAuth(authRoot);
   if (spaceRoot) initSpace(spaceRoot);

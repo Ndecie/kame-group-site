@@ -47,6 +47,7 @@
         localStorage.removeItem(k); sessionStorage.removeItem(k);
       });
     } catch (e) {}
+    document.documentElement.classList.remove('is-member');
     var s = document.querySelector('[data-cookie-status]');
     if (s) s.textContent = en() ? 'Done: nothing is stored anymore. You have been logged out.' : 'C’est fait : plus rien n’est enregistré. Vous avez été déconnecté(e).';
   });

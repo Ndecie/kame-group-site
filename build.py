@@ -391,8 +391,11 @@ def head(title_fr, title_en, desc_fr, fname='index.html', noindex=False, base=No
 
 
 def brand(href):
+    space = href.startswith('espace-membre')
+    label = (bi_attr('aria-label', 'KAME GROUP, mon espace', 'KAME GROUP, my space') if space
+             else bi_attr('aria-label', 'KAME GROUP, accueil', 'KAME GROUP, home'))
     return ('<a class="brand" href="%s" %s><span class="hex-badge"><img src="assets/img/kame-symbole.png" alt="" width="28" height="36"></span>'
-            '<span class="brand-name">KAME GROUP</span></a>' % (href, bi_attr('aria-label', 'KAME GROUP, accueil', 'KAME GROUP, home')))
+            '<span class="brand-name">KAME GROUP</span></a>' % (href, label))
 
 
 def lang_switch():
@@ -401,21 +404,22 @@ def lang_switch():
             '<button type="button" data-set-lang="en" aria-pressed="false" lang="en">EN</button></div>')
 
 
-def header(home):
+def header(home, brand_href=None):
     h = home
     return ('<header class="site-header"><div class="container header-inner">%s<div class="header-spacer"></div>%s'
             '<nav class="main-nav" %s>'
             '<a href="%s#apropos">%s</a><a href="%s#outils">%s</a><a href="%s#talent">Talent</a><a href="%s#contact">Contact</a></nav>'
-            '<div class="header-actions"><a class="link-login" href="connexion.html">%s</a>'
-            '<a class="btn btn-outline-light btn-sm" href="%s#rejoindre">%s</a>'
+            '<div class="header-actions"><a class="link-login" href="connexion.html" data-guest>%s</a>'
+            '<a class="link-login" href="espace-membre.html" data-member>%s</a>'
+            '<a class="btn btn-outline-light btn-sm" href="%s#rejoindre" data-guest>%s</a>'
             '<button class="menu-toggle" type="button" aria-controls="drawer" aria-expanded="false" %s>%s</button></div></div>%s</header>'
-            % (brand(h or '#accueil'), lang_switch(), bi_attr('aria-label', 'Navigation principale', 'Main navigation'),
+            % (brand(brand_href or h or '#accueil'), lang_switch(), bi_attr('aria-label', 'Navigation principale', 'Main navigation'),
                h, T('À propos', 'About'), h, T('Nos outils et services', 'Tools &amp; services'), h, h,
-               T('Se connecter', 'Log in'), h, T('Devenir membre', 'Become a member'),
+               T('Se connecter', 'Log in'), T('Mon espace', 'My space'), h, T('Devenir membre', 'Become a member'),
                bi_attr('aria-label', 'Ouvrir le menu', 'Open the menu'), icon('menu', 24, 2), edge_svg(12, 'down')))
 
 
-def drawer(home):
+def drawer(home, brand_href=None):
     h = home
     links = [
         ('%s#accueil' % h, 'Accueil', 'Home', ''), ('%s#apropos' % h, 'À propos', 'About', ''),
@@ -426,14 +430,17 @@ def drawer(home):
         ('entreprise.html', 'Entreprise', 'Business', 'sub'), ('investisseur.html', 'Investisseur', 'Investor', 'sub'),
         ('%s#contact' % h, 'Contact', 'Contact', ''),
     ]
-    nav = ''.join('<a href="%s"%s>%s</a>' % (u, (' class="%s"' % c) if c else '', T(fr, en)) for u, fr, en, c in links)
+    guest_only = {'%s#rejoindre' % h, 'partenaire.html', 'commercant.html', 'entreprise.html', 'investisseur.html'}
+    nav = ''.join('<a href="%s"%s%s>%s</a>' % (u, (' class="%s"' % c) if c else '', ' data-guest' if u in guest_only else '', T(fr, en))
+                  for u, fr, en, c in links)
     return ('<div class="drawer-backdrop"></div><aside id="drawer" class="drawer" aria-hidden="true" %s>'
             '<div class="drawer-head">%s<button class="drawer-close" type="button" %s>%s</button></div>'
-            '<nav %s>%s</nav><div class="drawer-foot">%s<a class="btn btn-light" href="connexion.html">%s</a>'
-            '<a class="btn btn-outline-light" href="%s#rejoindre">%s</a></div></aside>'
-            % (bi_attr('aria-label', 'Menu', 'Menu'), brand(h or '#accueil'), bi_attr('aria-label', 'Fermer le menu', 'Close the menu'),
+            '<nav %s>%s</nav><div class="drawer-foot">%s<a class="btn btn-light" href="connexion.html" data-guest>%s</a>'
+            '<a class="btn btn-light" href="espace-membre.html" data-member>%s</a>'
+            '<a class="btn btn-outline-light" href="%s#rejoindre" data-guest>%s</a></div></aside>'
+            % (bi_attr('aria-label', 'Menu', 'Menu'), brand(brand_href or h or '#accueil'), bi_attr('aria-label', 'Fermer le menu', 'Close the menu'),
                icon('close', 24, 2), bi_attr('aria-label', 'Menu du site', 'Site menu'), nav, lang_switch(),
-               T('Se connecter', 'Log in'), h, T('Devenir membre', 'Become a member')))
+               T('Se connecter', 'Log in'), T('Mon espace', 'My space'), h, T('Devenir membre', 'Become a member')))
 
 
 def honey():
@@ -454,12 +461,12 @@ def contact_lines(cls='info-line'):
     return ''.join(out)
 
 
-def footer(home):
+def footer(home, brand_href=None):
     h = home
     nav = ''.join('<a href="%s">%s</a>' % (u, T(fr, en)) for u, fr, en in [
         ('%s#apropos' % h, 'À propos', 'About'), ('%s#outils' % h, 'Nos outils et services', 'Tools &amp; services'),
         ('%s#paiements' % h, 'Paiements', 'Payments'), ('%s#talent' % h, 'Talent', 'Talent'), ('formations.html', 'Formations', 'Training')])
-    members = ''.join('<a href="%s">%s</a>' % (p['page'], T(*p['name'])) for p in PROFILES) + '<a href="connexion.html">%s</a>' % T('Se connecter', 'Log in')
+    members = ''.join('<a href="%s">%s</a>' % (p['page'], T(*p['name'])) for p in PROFILES) + '<a href="connexion.html" data-guest>%s</a><a href="espace-membre.html" data-member>%s</a>' % (T('Se connecter', 'Log in'), T('Mon espace', 'My space'))
     contact = ''.join('<span>%s</span>' % CITY if True else '' for _ in [0])
     if CONTACT_EMAIL:
         contact += '<a href="mailto:%s">%s</a>' % (CONTACT_EMAIL, CONTACT_EMAIL)
@@ -472,17 +479,18 @@ def footer(home):
             '<div class="footer-links"><p class="footer-title">%s</p>%s</div>'
             '<div class="footer-links"><p class="footer-title">Contact</p>%s</div></div>'
             '<div class="footer-bottom"><span>%s</span>%s</div></div></footer>'
-            % (edge_svg(26, 'up'), brand(h or '#accueil'), T('Un avenir sûr et éclairé.', 'A secure and bright future.'),
+            % (edge_svg(26, 'up'), brand(brand_href or h or '#accueil'), T('Un avenir sûr et éclairé.', 'A secure and bright future.'),
                T('Groupe technologique et financier né au Gabon.', 'Technology and financial group born in Gabon.'),
                bi_attr('aria-label', 'Liens du pied de page', 'Footer links'), nav, T('Espace membre', 'Member area'), members, contact,
                T('© 2026 KAME GROUP. Tous droits réservés.', '© 2026 KAME GROUP. All rights reserved.'),
                legal_links()))
 
 
-def page(fname, title_fr, title_en, desc_fr, main, home='index.html', noindex=False, base=None):
+def page(fname, title_fr, title_en, desc_fr, main, home='index.html', noindex=False, base=None, brand_href=None):
     body = ('<body>\n<a class="skip-link" href="#contenu">%s</a>\n%s\n%s\n%s\n<main id="contenu">\n%s\n</main>\n%s\n'
             '<script src="assets/js/auth.js" defer></script>\n<script src="assets/js/main.js" defer></script>\n<script src="assets/js/consent.js" defer></script>\n</body>\n</html>\n'
-            % (T('Aller au contenu', 'Skip to content'), header(home), drawer(home), honey(), main, footer(home)))
+            % (T('Aller au contenu', 'Skip to content'), header(home, brand_href), drawer(home, brand_href), honey(), main,
+               footer(home, brand_href)))
     with open(os.path.join(DIST, fname), 'w', encoding='utf-8') as f:
         f.write(head(title_fr, title_en, desc_fr, fname, noindex, base) + body)
 
@@ -612,7 +620,7 @@ def index_page():
       <p class="eyebrow">%(eyebrow)s</p>
       <h1>%(h1)s</h1>
       <p class="lead">%(lead)s</p>
-      <div class="hero-actions"><a class="btn btn-light" href="#rejoindre">%(cta1)s</a><a class="btn btn-outline-light" href="#outils">%(cta2)s</a></div>
+      <div class="hero-actions"><a class="btn btn-light" href="#rejoindre" data-guest>%(cta1)s</a><a class="btn btn-outline-light" href="#outils">%(cta2)s</a></div>
     </div>
     <div class="hero-visual" data-reveal data-delay="1">%(hive)s</div>
   </div>
@@ -694,7 +702,7 @@ def index_page():
   </div>
 </section>
 
-<section class="section bg-tint join" id="rejoindre">
+<section class="section bg-tint join" id="rejoindre" data-guest>
   <div class="return-bee" aria-hidden="true">%(return_bee)s</div>
   <div class="container">
     %(join_head)s
@@ -797,6 +805,13 @@ def page_hero(crumb, eyebrow, h1, lead, cta, visual):
             % (T('Accueil', 'Home'), crumb, eyebrow, h1, lead, cta, visual, edge_svg(20, 'down')))
 
 
+def compact_hero(eyebrow, h1):
+    # Bandeau fin (espace membre) : le tableau de bord apparaît tout de suite
+    return ('<section class="page-hero page-hero-compact" id="accueil"><div class="hex-pattern" aria-hidden="true"></div>'
+            '<div class="container page-hero-inner"><div class="page-hero-text"><p class="eyebrow">%s</p><h1>%s</h1></div></div>%s</section>'
+            % (eyebrow, h1, edge_svg(20, 'down')))
+
+
 def features(items, s=10):
     return '<div class="features">%s</div>' % ''.join(
         '<div class="feature hc" data-hc="%d" data-reveal data-delay="%d">%s<div class="hc-content"><span class="hex-icon">%s</span><h3>%s</h3><p>%s</p></div></div>'
@@ -839,7 +854,7 @@ def account_section(key):
         ('id', ('Votre identifiant KAME et vos outils, dans votre espace', 'Your KAME member ID and your tools, in your space')),
     ]
     li = ''.join('<li><span class="hex-icon">%s</span><span>%s</span></li>' % (icon(k, 22), T(*t)) for k, t in points)
-    return ('<section class="section bg-tint" id="demande"><div class="container"><div class="account-cta" data-reveal>'
+    return ('<section class="section bg-tint" id="demande" data-guest><div class="container"><div class="account-cta" data-reveal>'
             '<div class="account-cta-text"><p class="eyebrow">%s</p><h2 class="title h2">%s</h2><span class="bar" aria-hidden="true"></span>'
             '<p class="lead">%s</p><div class="hero-actions"><a class="btn btn-primary" href="connexion.html?profil=%s#inscription">%s</a>'
             '<a class="btn btn-outline" href="connexion.html">%s</a></div></div><ul class="account-points">%s</ul></div></div></section>'
@@ -853,7 +868,8 @@ def account_section(key):
 def profile_page(fname, key, title, lead, eyebrow_sec, feat, extra_sections, step_items, form_html, title_meta, desc_meta, bee_icon, bee_extra='', bee_ant=True):
     # form_html : ancien formulaire de demande, remplacé par la création de compte (gardé pour mémoire)
     hero = page_hero(T(*title), T('Devenir membre', 'Become a member'), T(*title), T(*lead),
-                     '<a class="btn btn-light" href="connexion.html?profil=%s#inscription">%s</a><a class="btn btn-outline-light" href="index.html#rejoindre">%s</a>'
+                     '<a class="btn btn-light" href="connexion.html?profil=%s#inscription" data-guest>%s</a>'
+                     '<a class="btn btn-outline-light" href="index.html#rejoindre" data-guest>%s</a>'
                      % (ROLE_OF[key], T('Créer mon compte', 'Create my account'), T('Tous les profils', 'All profiles')),
                      profile_visual(key, bee_icon, bee_extra, bee_ant))
     step_items = [ACCOUNT_STEP] + list(step_items[1:])
@@ -1308,10 +1324,10 @@ def space_page():
               % (T("L'espace membre ouvre bientôt", 'The member area opens soon'),
                  T("La connexion n'est pas encore activée. Revenez dans quelques jours.", 'Sign-in is not switched on yet. Please come back in a few days.'),
                  T('Nous écrire', 'Write to us')))
-    hero = page_hero(T('Mon espace', 'My space'), T('Espace membre', 'Member area'), T('Mon espace', 'My space'),
-                     T('Votre espace membre KAME GROUP.', 'Your KAME GROUP member space.'), '', profile_visual('id', 'id'))
-    main = hero + '<section class="section"><div class="container"><div class="space" id="space">%s%s%s%s</div></div></section>' % (loading, pending, dash, closed)
-    page('espace-membre.html', 'Mon espace | KAME GROUP', 'My space | KAME GROUP', 'Espace membre KAME GROUP.', main, noindex=True)
+    hero = compact_hero(T('Espace membre', 'Member area'), T('Mon espace', 'My space'))
+    main = hero + '<section class="section section-tight"><div class="container"><div class="space" id="space">%s%s%s%s</div></div></section>' % (loading, pending, dash, closed)
+    page('espace-membre.html', 'Mon espace | KAME GROUP', 'My space | KAME GROUP', 'Espace membre KAME GROUP.', main, noindex=True,
+         brand_href='espace-membre.html')
 
 
 def build_auth_pages():
