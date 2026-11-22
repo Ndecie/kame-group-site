@@ -1124,8 +1124,11 @@ INVESTOR_FAQ = [
      ("Créez votre compte investisseur. Notre équipe vérifie votre profil, puis vous accédez à votre espace : entreprises vérifiées, KAME Score, données et opportunités. Quand un projet vous intéresse, vous manifestez votre intérêt et KAME GROUP vous met en relation avec l'entreprise.",
       'Create your investor account. Our team checks your profile, then you access your space: verified businesses, KAME Score, data and opportunities. When a project interests you, you express your interest and KAME GROUP puts you in touch with the business.')),
     (("Qu'est-ce que le KAME Score ?", 'What is the KAME Score?'),
-     ("Une note de fiabilité sur 100, classée de A à E. Elle combine la régularité des revenus, l'historique de paiement, le niveau d'endettement, l'ancienneté et la conformité de l'entreprise, à partir des données qu'elle partage avec son accord.",
-      'A reliability rating out of 100, graded from A to E. It combines revenue regularity, payment history, debt level, track record and compliance, based on data the business shares with its consent.')),
+     ("Une note de fiabilité sur 100, classée de A à E. Elle combine la régularité des revenus, l'historique de paiement, le niveau d'endettement, l'ancienneté, la conformité et la transparence de l'entreprise (ses réponses aux demandes des investisseurs), à partir des données qu'elle partage avec son accord. Le calcul est le même pour toutes les entreprises.",
+      'A reliability rating out of 100, graded from A to E. It combines revenue regularity, payment history, debt level, track record, compliance and transparency (how the business answers investor requests), based on data the business shares with its consent. The calculation is the same for every business.')),
+    (("Puis-je demander un document précis à une entreprise ?", 'Can I ask a business for a specific document?'),
+     ("Oui. Sur la fiche de l'entreprise, cliquez sur « Demander une information ». KAME vérifie la demande, puis la transmet à l'entreprise, qui peut accepter ou refuser. Les documents reçus sont vérifiés par KAME avant d'apparaître, et vous suivez chaque demande dans « Mes demandes ».",
+      "Yes. On the business's page, click \"Request information\". KAME checks the request, then passes it on to the business, which can accept or decline. Documents received are verified by KAME before they appear, and you follow each request in \"My requests\".")),
     (("Comment KAME GROUP vérifie-t-il les entreprises ?", 'How does KAME GROUP check businesses?'),
      ("Avec KAME ID : nous vérifions l'identité des dirigeants et les documents officiels de l'entreprise (RCCM, NIF) avant qu'elle n'apparaisse dans l'annuaire.",
       "With KAME ID: we check the directors' identity and the company's official documents (RCCM, NIF) before it appears in the directory.")),
@@ -1604,16 +1607,19 @@ def space_page():
          scripts='<script src="assets/js/kame-icons.js" defer></script>\n<script src="assets/js/investor.js" defer></script>\n')
 
 
-INV_VIEWS = ['accueil', 'annuaire', 'opportunites', 'portefeuille', 'score', 'data', 'registre', 'profil', 'entreprise']
+INV_VIEWS = ['accueil', 'annuaire', 'opportunites', 'portefeuille', 'demandes', 'score', 'data', 'registre', 'profil', 'entreprise']
 
 
 def investor_shell():
     # Espace investisseur : colonne d'outils + zone centrale (contenu rempli par investor.js)
-    def item(v, ic, fr, en, sub=False):
-        return '<a class="inv-nav-item%s" href="#%s" data-nav="%s">%s<span>%s</span></a>' % (' sub' if sub else '', v, v, icon(ic, 20, 1.9), T(fr, en))
+    def item(v, ic, fr, en, sub=False, count=''):
+        return '<a class="inv-nav-item%s" href="#%s" data-nav="%s">%s<span>%s</span>%s</a>' % (' sub' if sub else '', v, v, icon(ic, 20, 1.9), T(fr, en), count)
     nav = (item('accueil', 'home', 'Accueil', 'Home') + item('annuaire', 'building', 'Entreprises', 'Companies')
            + item('opportunites', 'target', 'Opportunités', 'Opportunities')
            + item('portefeuille', 'briefcase', 'Mon portefeuille', 'My portfolio')
+           # Demandes d'information aux entreprises, avec le nombre de demandes en cours
+           + item('demandes', 'file', 'Mes demandes', 'My requests',
+                  count='<span class="inv-nav-count" data-req-count hidden></span>')
            + '<p class="inv-nav-label">%s</p>' % T('Outils KAME', 'KAME tools')
            + item('score', 'score', 'KAME Score', 'KAME Score', True) + item('data', 'data', 'KAME Data', 'KAME Data', True)
            + item('registre', 'registre', 'KAME Registre', 'KAME Registre', True))

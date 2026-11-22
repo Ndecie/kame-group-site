@@ -24,7 +24,7 @@
     return '<svg aria-hidden="true" focusable="false" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' +
       (sw || 1.9) + '" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || '') + '</svg>';
   }
-  // Recherche sans tenir compte des accents ni des majuscules (« energie » trouve « Énergie »)
+  // Recherche sans tenir compte des accents ni des majuscules (« energie » trouve « Énergie »)
   function plain(s) { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
   // Nombres au format de la langue : 28 690 000 et 28,7 en français ; 28,690,000 et 28.7 en anglais
   function num(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, isEn() ? ',' : '\u00A0'); }
@@ -56,12 +56,13 @@
     var d = new Date(NOW.getFullYear(), NOW.getMonth() - mi, 1);
     LAST12.push({ fr: MONTHS_FR[d.getMonth()], en: MONTHS_EN[d.getMonth()], y: d.getFullYear(), m: d.getMonth() });
   }
-  function dateLabel(monthsAgo, day) {
-    var d = new Date(NOW.getFullYear(), NOW.getMonth() - monthsAgo, day);
-    var fr = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-    var en = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    return { fr: d.getDate() + ' ' + fr[d.getMonth()] + ' ' + d.getFullYear(), en: en[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear(), ts: d.getTime() };
+  var LONG_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  var LONG_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  function fmtDate(d) {
+    return { fr: d.getDate() + ' ' + LONG_FR[d.getMonth()] + ' ' + d.getFullYear(), en: LONG_EN[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear(), ts: d.getTime() };
   }
+  function dateLabel(monthsAgo, day) { return fmtDate(new Date(NOW.getFullYear(), NOW.getMonth() - monthsAgo, day)); }
+  function daysAgo(n) { return fmtDate(new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate() - n)); }
 
   // ------------------------------------------------------------ données de démonstration (fictives)
   var SECTORS = {
@@ -173,6 +174,44 @@
   ];
   var OPP_TYPES = { loan: ['Prêt', 'Loan'], equity: ['Prise de participation', 'Equity stake'] };
 
+  // Demandes d'information : l'investisseur demande, KAME vérifie la demande et la transmet, l'entreprise répond,
+  // KAME vérifie le document. Les données personnelles des employés ne peuvent pas être demandées.
+  var REQ_ITEMS = [
+    { id: 'cnss', fr: 'Attestation CNSS (cotisations sociales à jour)', en: 'CNSS certificate (social contributions up to date)' },
+    { id: 'etats-certifies', fr: 'États financiers certifiés par un expert-comptable', en: 'Financial statements certified by an accountant' },
+    { id: 'contrat-client', fr: 'Contrat ou bon de commande d\'un client important', en: 'Contract or purchase order from a major customer' },
+    { id: 'assurance', fr: 'Attestation d\'assurance', en: 'Insurance certificate' },
+    { id: 'dettes', fr: 'Liste des prêts et dettes en cours', en: 'List of current loans and debts' },
+    { id: 'local', fr: 'Titre de propriété ou bail du local', en: 'Property title or lease for the premises' }
+  ];
+  var REQ_BY_ID = {};
+  REQ_ITEMS.forEach(function (x) { REQ_BY_ID[x.id] = x; });
+  var REQ_STEPS = [
+    ['envoyee', 'Envoyée', 'Sent', 'KAME vérifie la demande', 'KAME checks the request'],
+    ['transmise', 'Transmise à l\'entreprise', 'Sent to the business', 'L\'entreprise accepte ou refuse', 'The business accepts or declines'],
+    ['recue', 'Document reçu', 'Document received', 'KAME vérifie le document', 'KAME verifies the document'],
+    ['verifiee', 'Vérifié et ajouté', 'Verified and added', 'Visible dans les documents', 'Visible in the documents']
+  ];
+  var REQ_ORDER = REQ_STEPS.map(function (x) { return x[0]; });
+
+  // Transparence (fictif) : [demandes reçues, réponses, délai moyen en jours, documents vérifiés].
+  // Même calcul pour toutes les entreprises : taux de réponse 60 %, rapidité 25 %, documents vérifiés 15 % ;
+  // un refus motivé compte comme une réponse ; sans aucune demande reçue, le critère ne compte pas encore.
+  var TRANSP = {
+    'okoume-data': [4, 4, 2, 3], 'mvett-paiements': [5, 5, 3, 4], 'ndjole-agro': [3, 2, 6, 1], 'franceville-sante': [2, 2, 4, 2],
+    'mitzic-cacao': [1, 1, 9, 1], 'akanda-logistique': [3, 3, 5, 1], 'ivindo-solaire': [2, 1, 12, 1], 'ogooue-marches': [0, 0, 0, 0],
+    'nyonie-peche': [1, 1, 2, 1], 'oyem-boutiques': [0, 0, 0, 0], 'moanda-materiaux': [4, 2, 13, 0]
+  };
+  function transparency(c) {
+    var x = TRANSP[c.id] || [0, 0, 0, 0];
+    var d = { received: x[0], answered: x[1], days: x[2], docs: x[3], score: null };
+    if (d.received) {
+      var speed = d.days <= 3 ? 1 : (d.days >= 14 ? 0 : (14 - d.days) / 11);
+      d.score = Math.round(60 * d.answered / d.received + 25 * speed + 15 * Math.min(d.docs, 5) / 5);
+    }
+    return d;
+  }
+
   // Portefeuille déclaré par l'investisseur (investissements faits en dehors de la plateforme)
   var PORTFOLIO = [
     { company: 'okoume-data', invested: 8e6, perf: 18 }, { company: 'mvett-paiements', invested: 6e6, perf: 22 },
@@ -181,8 +220,17 @@
   ];
   var state = {
     followed: ['okoume-data', 'mvett-paiements', 'ndjole-agro', 'mitzic-cacao', 'franceville-sante', 'ivindo-solaire', 'akanda-logistique', 'ogooue-marches'],
-    interest: {}, requested: {}, read: false,
-    q: '', sector: '', city: '', level: '', sort: 'score', oppType: '', scoreSector: ''
+    interest: {}, requested: {}, unread: null, notifs: [],
+    q: '', sector: '', city: '', level: '', sort: 'score', oppType: '', scoreSector: '', reqFilter: '',
+    // Demandes déjà faites par l'investisseur (démo) : une vérifiée, une refusée avec un motif, une chez l'entreprise
+    requests: [
+      { id: 'r1', company: 'mvett-paiements', item: 'cnss', note: '', status: 'verifiee', sent: daysAgo(9), answered: daysAgo(6), visibility: 'all' },
+      { id: 'r2', company: 'akanda-logistique', item: 'contrat-client', note: '', status: 'refusee', stoppedAt: 'transmise', by: 'entreprise',
+        sent: daysAgo(12), answered: daysAgo(8),
+        reason: { fr: 'Contrat confidentiel avec un client public. L\'entreprise propose à la place une attestation de service fait, signée par ce client.',
+                  en: 'Confidential contract with a public-sector client. The business offers instead a certificate of completed work, signed by that client.' } },
+      { id: 'r3', company: 'ndjole-agro', item: 'etats-certifies', note: '', status: 'transmise', sent: daysAgo(2) }
+    ]
   };
   var invested = PORTFOLIO.reduce(function (s, p) { return s + p.invested; }, 0);
   var valueNow = PORTFOLIO.reduce(function (s, p) { return s + p.invested * (1 + p.perf / 100); }, 0);
@@ -205,7 +253,10 @@
   }
   function notifications() {
     var o = BY_ID['okoume-data'], iv = BY_ID['ivindo-solaire'], mc = BY_ID['mitzic-cacao'];
-    return [
+    return state.notifs.concat([
+      { icon: 'ok', go: '#demandes', when: ['Il y a 20 min', '20 min ago'],
+        fr: 'Mvett Paiements a répondu à votre demande : l\'attestation CNSS est vérifiée et ajoutée à ses documents.',
+        en: 'Mvett Paiements answered your request: the CNSS certificate is verified and added to its documents.' },
       { icon: 'score', go: '#entreprise/okoume-data/score', when: ['Il y a 1 h', '1 h ago'],
         fr: 'Le KAME Score de ' + o.name + ' est passé à ' + o.score + '/100 (+' + o.trend + ' pts).',
         en: o.name + "'s KAME Score rose to " + o.score + '/100 (+' + o.trend + ' pts).' },
@@ -214,7 +265,20 @@
         en: 'New opportunity: ' + iv.name + ' is seeking ' + money(60e6) + '.' },
       { icon: 'file', go: '#entreprise/mitzic-cacao/documents', when: ['Il y a 1 j', '1 d ago'],
         fr: 'Un nouveau document est disponible pour ' + mc.name + '.', en: 'A new document is available for ' + mc.name + '.' }
-    ];
+    ]);
+  }
+  function addNotif(n) {
+    state.notifs.unshift(n);
+    state.unread = (state.unread || 0) + 1;
+    updateBadges();
+  }
+  // Pastilles : notifications non lues (cloche) et demandes en cours (menu de gauche)
+  function updateBadges() {
+    var cnt = document.querySelector('[data-notif-count]');
+    if (cnt) { cnt.textContent = String(state.unread || 0); cnt.hidden = !state.unread; }
+    var pending = state.requests.filter(function (r) { return r.status !== 'verifiee' && r.status !== 'refusee'; }).length;
+    var rc = shell.querySelector('[data-req-count]');
+    if (rc) { rc.textContent = String(pending); rc.hidden = !pending; }
   }
 
   // ------------------------------------------------------------ petits éléments réutilisables
@@ -335,7 +399,7 @@
   }
 
   // ------------------------------------------------------------ vues
-  var VIEWS = ['accueil', 'annuaire', 'opportunites', 'portefeuille', 'score', 'data', 'registre', 'profil', 'entreprise'];
+  var VIEWS = ['accueil', 'annuaire', 'opportunites', 'portefeuille', 'demandes', 'score', 'data', 'registre', 'profil', 'entreprise'];
   var space = function () { return window.KAME_SPACE || {}; };
 
   function oppCard(o, compact) {
@@ -478,7 +542,7 @@
       '<p class="inv-meta">' + sectorName(c.sector) + ' · ' + ic('pin', 14, 2) + esc(c.city) + ' · ' + esc(c.legal) + ' · ' + t('depuis ', 'since ') + c.since + '</p>' +
       '<p class="co-badges">' + verified() + '<span class="inv-tag">' + ic('id', 15, 2) + t('Dirigeants vérifiés', 'Directors verified') + '</span></p></div></div>' +
       '<div class="co-score">' + scoreBadge(c, true) + trendTag(c.trend) + '</div>' +
-      '<div class="co-actions">' + followBtn(c, state.followed.indexOf(c.id) >= 0) +
+      '<div class="co-actions">' + followBtn(c, state.followed.indexOf(c.id) >= 0) + askBtn(c, 'btn-outline') +
       '<button type="button" class="btn btn-primary btn-sm" data-interest="' + c.id + '">' + (state.interest[c.id] ? t('Intérêt envoyé', 'Interest sent') : t('Manifester mon intérêt', 'Express interest')) + '</button></div></section>';
     var tabsHtml = '<nav class="inv-tabs" aria-label="' + esc(L('Rubriques de l\'entreprise', 'Company sections')) + '">' + tabs.map(function (tb) {
       return '<a href="#entreprise/' + c.id + '/' + tb[0] + '"' + (tb[0] === tab ? ' aria-current="page"' : '') + '>' + t(tb[1], tb[2]) + '</a>';
@@ -491,10 +555,26 @@
         (opp ? card(t('Opportunité ouverte', 'Open opportunity'), oppCard(opp, true)) :
           card(t('Opportunité', 'Opportunity'), '<p class="inv-empty">' + t('Pas de levée de fonds ouverte pour le moment. Suivez l\'entreprise pour être prévenu.', 'No open fundraising right now. Follow the company to be notified.') + '</p>')) + '</div>';
     } else if (tab === 'score') {
+      var tr = transparency(c);
       body = '<div class="inv-grid g-two">' + card(t('KAME Score', 'KAME Score'), gauge(c) + '<p class="inv-center">' + trendTag(c.trend) + ' ' + t('en un mois', 'in one month') + '</p>' +
         lineChart([{ values: c.scoreHist, color: level(c.score).c }], { h: 150, fmt: function (v) { return String(Math.round(v)); }, label: L('Évolution du KAME Score', 'KAME Score history') })) +
-        card(t('Ce qui compose le score', 'What makes up the score'), bars(c.sub.map(function (x) { return { label: t(x[0], x[1]), pct: x[2], value: x[2] + '/100', color: level(x[2]).c }; })) +
-          '<p class="inv-foot-note">' + t('Calculé à partir des données que l\'entreprise partage avec son accord. Mis à jour chaque mois.', 'Computed from data the company shares with its consent. Updated monthly.') + '</p>') + '</div>';
+        card(t('Ce qui compose le score', 'What makes up the score'), bars(c.sub.map(function (x) { return { label: t(x[0], x[1]), pct: x[2], value: x[2] + '/100', color: level(x[2]).c }; })
+          .concat([tr.score === null ? { label: t('Transparence', 'Transparency'), pct: 0, value: t('Pas encore évaluée', 'Not rated yet'), color: '#9AA9AE' }
+                                     : { label: t('Transparence', 'Transparency'), pct: tr.score, value: tr.score + '/100', color: level(tr.score).c }])) +
+          '<p class="inv-foot-note">' + t('Calculé à partir des données que l\'entreprise partage avec son accord, de la même façon pour toutes les entreprises. Mis à jour chaque mois.',
+            'Computed from data the company shares with its consent, the same way for every business. Updated monthly.') + '</p>') +
+        card(ic('file', 20, 2) + t('Transparence : réponses aux demandes des investisseurs', 'Transparency: answers to investor requests'),
+          (tr.score === null ?
+            '<p>' + t('Cette entreprise n\'a encore reçu aucune demande d\'information : ce critère ne compte pas encore dans son score.',
+              'This business has not received any information request yet: this criterion does not count in its score yet.') + '</p>' :
+            '<dl class="inv-facts wide">' +
+            '<div><dt>' + t('Demandes reçues', 'Requests received') + '</dt><dd>' + tr.received + '</dd></div>' +
+            '<div><dt>' + t('Réponses', 'Answers') + '</dt><dd>' + tr.answered + ' (' + pct(Math.round(tr.answered / tr.received * 100)) + ')</dd></div>' +
+            '<div><dt>' + t('Délai moyen de réponse', 'Average response time') + '</dt><dd>' + t(tr.days + (tr.days > 1 ? ' jours' : ' jour'), tr.days + (tr.days > 1 ? ' days' : ' day')) + '</dd></div>' +
+            '<div><dt>' + t('Documents vérifiés', 'Verified documents') + '</dt><dd>' + tr.docs + '</dd></div></dl>') +
+          '<p class="inv-foot-note">' + t('Même calcul pour toutes les entreprises : taux de réponse, rapidité et documents vérifiés par KAME. Un refus motivé compte comme une réponse : une entreprise n\'est jamais obligée de tout donner.',
+            'Same calculation for every business: response rate, speed and documents verified by KAME. A refusal with a reason counts as an answer: a business is never forced to share everything.') + '</p>' +
+          '<div>' + askBtn(c, 'btn-primary') + '</div>', '', 'wide') + '</div>';
     } else if (tab === 'data') {
       var avgG = SECTOR_GROWTH[c.sector];
       body = '<div class="inv-kpis three">' + kpi('trend', s.color, t('Chiffre d\'affaires (12 mois)', 'Revenue (12 months)'), millions(c.rev.reduce(function (a, b) { return a + b; }, 0)) + ' FCFA', trendTag(c.growth, '%')) +
@@ -517,11 +597,90 @@
             '<button type="button" class="btn btn-outline btn-sm" data-request="' + key + '">' + t('Demander l\'accès', 'Request access') + '</button>');
         return '<li>' + hexIcon(dd[2] ? 'lock' : 'file', dd[2] ? '#B8734F' : '#159E96') + '<span><strong>' + t(dd[0], dd[1]) + '</strong><span class="inv-meta">' +
           (dd[2] ? t('Accès sur demande, accordé par l\'entreprise', 'Access on request, granted by the company') : t('Consultable par les membres vérifiés', 'Available to verified members')) + '</span></span>' + action + '</li>';
-      }).join('') + '</ul>');
+      }).join('') + state.requests.filter(function (r) { return r.company === c.id && r.status !== 'refusee'; }).map(function (r) {
+        var done = r.status === 'verifiee';
+        return '<li class="' + (done ? 'doc-added' : 'doc-pending') + '">' + hexIcon(done ? 'shield' : 'clock', done ? '#0E7C75' : '#C98A1E') +
+          '<span><strong>' + reqName(r) + '</strong><span class="inv-meta">' +
+          (done ? t('Ajouté à la suite de votre demande, vérifié par KAME · ', 'Added after your request, verified by KAME · ') +
+                  (r.visibility === 'all' ? t('visible par tous les investisseurs', 'visible to all investors') : t('visible par vous seulement', 'visible to you only'))
+                : t('Votre demande est en cours : ', 'Your request is in progress: ') + reqStatusText(r)) + '</span></span>' +
+          (done ? '<span class="inv-chip ok">' + t('Vérifié', 'Verified') + '</span>' : '<a class="inv-chip warn" href="#demandes">' + t('Suivre', 'Track') + '</a>') + '</li>';
+      }).join('') + '</ul>' +
+        '<div class="inv-ask-more">' + ic('info', 18, 2) + '<p>' + t('Il vous manque une information ? Demandez-la : KAME vérifie la demande et la transmet à l\'entreprise, qui peut accepter ou refuser.',
+          'Missing something? Ask for it: KAME checks the request and passes it on to the business, which can accept or decline.') + '</p>' + askBtn(c, 'btn-outline') + '</div>');
     }
     return head + tabsHtml + '<div class="inv-tabpanel">' + body + '</div>' +
       '<p class="inv-disclaimer">' + ic('info', 16, 2) + t('Entreprise fictive, présentée pour la démonstration. Les indicateurs ne constituent pas un conseil en investissement.',
         'Fictitious company shown for the demo. Indicators are not investment advice.') + '</p>';
+  }
+
+  // ------------------------------------------------------------ demandes d'information
+  function askBtn(c, style) {
+    return '<button type="button" class="btn ' + style + ' btn-sm" data-ask="' + c.id + '">' + ic('file', 16, 2) + t('Demander une information', 'Request information') + '</button>';
+  }
+  function reqName(r) {
+    if (r.item === 'autre') return t(r.custom, r.custom);
+    var x = REQ_BY_ID[r.item];
+    return t(x.fr, x.en);
+  }
+  function reqStatusText(r) {
+    return {
+      envoyee: t('KAME vérifie la demande', 'KAME is checking the request'),
+      transmise: t('chez l\'entreprise', 'with the business'),
+      recue: t('KAME vérifie le document', 'KAME is verifying the document'),
+      verifiee: t('vérifié', 'verified'),
+      refusee: t('refusée', 'declined')
+    }[r.status];
+  }
+  function reqChip(r) {
+    if (r.status === 'verifiee') return '<span class="inv-chip ok">' + ic('shield', 14, 2.2) + t('Vérifié', 'Verified') + '</span>';
+    if (r.status === 'refusee') return '<span class="inv-chip ko">' + t('Refusée', 'Declined') + '</span>';
+    return '<span class="inv-chip warn">' + ic('clock', 14, 2.2) + t('En cours', 'In progress') + '</span>';
+  }
+  function reqCard(r) {
+    var c = BY_ID[r.company];
+    var refused = r.status === 'refusee';
+    var reached = REQ_ORDER.indexOf(refused ? r.stoppedAt : r.status);
+    var steps = REQ_STEPS.map(function (st, i) {
+      var cls = i < reached || (i === reached && (r.status === 'verifiee')) ? 'done' : (i === reached ? (refused ? 'stopped' : 'current') : '');
+      return '<li class="' + cls + '"><span class="st-dot" aria-hidden="true">' + (cls === 'done' ? ic('ok', 12, 3) : '') + '</span><span class="st-txt"><strong>' + t(st[1], st[2]) +
+        '</strong><span>' + t(st[3], st[4]) + '</span></span>' + (cls === 'current' ? '<span class="sr-only">' + t('(étape en cours)', '(current step)') + '</span>' : '') + '</li>';
+    }).join('');
+    return '<article class="inv-req' + (refused ? ' is-refused' : '') + '"><div class="req-top">' + hexIcon(SECTORS[c.sector].icon, SECTORS[c.sector].color) +
+      '<div class="req-title"><h3>' + reqName(r) + '</h3><p class="inv-meta"><a href="#entreprise/' + c.id + '">' + esc(c.name) + '</a> · ' + t('demandée le ', 'requested on ') +
+      t(r.sent.fr, r.sent.en) + '</p></div>' + reqChip(r) + '</div>' +
+      (r.note ? '<p class="req-note">' + t('Votre message : ', 'Your message: ') + esc(r.note) + '</p>' : '') +
+      '<ol class="req-steps">' + steps + '</ol>' +
+      (refused ? '<div class="req-refused">' + ic('info', 18, 2) + '<div><strong>' + (r.by === 'kame' ? t('Refusée par KAME', 'Declined by KAME') : t('Refusée par l\'entreprise', 'Declined by the business')) +
+        '</strong><span>' + t(r.reason.fr, r.reason.en) + '</span></div></div>' : '') +
+      (r.status === 'verifiee' ? '<div class="req-actions"><a class="btn btn-outline btn-sm" href="#entreprise/' + c.id + '/documents">' + t('Voir le document', 'View the document') + '</a></div>' : '') +
+      '</article>';
+  }
+  function viewDemandes() {
+    var isPending = function (r) { return r.status !== 'verifiee' && r.status !== 'refusee'; };
+    var counts = { '': state.requests.length, encours: state.requests.filter(isPending).length,
+                   verifiee: state.requests.filter(function (r) { return r.status === 'verifiee'; }).length,
+                   refusee: state.requests.filter(function (r) { return r.status === 'refusee'; }).length };
+    var list = state.requests.filter(function (r) {
+      return !state.reqFilter || (state.reqFilter === 'encours' ? isPending(r) : r.status === state.reqFilter);
+    }).sort(function (a, b) { return b.sent.ts - a.sent.ts; });
+    var chips = '<div class="inv-chips" role="group" aria-label="' + esc(L('Filtrer les demandes', 'Filter requests')) + '">' +
+      [['', 'Toutes', 'All'], ['encours', 'En cours', 'In progress'], ['verifiee', 'Vérifiées', 'Verified'], ['refusee', 'Refusées', 'Declined']].map(function (o) {
+        return '<button type="button" data-reqfilter="' + o[0] + '" aria-pressed="' + (state.reqFilter === o[0]) + '">' + t(o[1], o[2]) + ' <span class="chip-n">' + counts[o[0]] + '</span></button>';
+      }).join('') + '</div>';
+    var how = card(t('Comment ça marche', 'How it works'), '<ol class="inv-how">' + [
+      ['Vous demandez', 'You ask', 'Sur la fiche d\'une entreprise, bouton « Demander une information ».', 'On a business page, "Request information" button.'],
+      ['KAME vérifie la demande', 'KAME checks the request', 'Pas de demande abusive, ni de données personnelles des employés.', 'No abusive requests, no personal data about employees.'],
+      ['L\'entreprise répond', 'The business answers', 'Elle envoie le document ou refuse en expliquant pourquoi.', 'It sends the document or declines with a reason.'],
+      ['KAME vérifie le document', 'KAME verifies the document', 'Il apparaît dans ses documents avec le badge « Vérifié ».', 'It appears in its documents with the "Verified" badge.']
+    ].map(function (x, i) { return '<li><span class="how-n">' + (i + 1) + '</span><span><strong>' + t(x[0], x[1]) + '</strong><span>' + t(x[2], x[3]) + '</span></span></li>'; }).join('') + '</ol>' +
+      '<p class="inv-foot-note">' + t('Les réponses des entreprises comptent dans le critère Transparence de leur KAME Score, calculé de la même façon pour toutes.',
+        'Business answers count in the Transparency criterion of their KAME Score, calculated the same way for all.') + '</p>');
+    return heading('Mes demandes', 'My requests', t('Les documents et informations que vous avez demandés aux entreprises, et où en est chaque demande.',
+      'The documents and information you have asked businesses for, and where each request stands.')) + chips +
+      '<div class="inv-grid g-req"><div class="inv-reqs">' + (list.length ? list.map(reqCard).join('') :
+        '<p class="inv-empty">' + t('Aucune demande ici. Ouvrez la fiche d\'une entreprise et cliquez sur « Demander une information ».',
+          'No requests here. Open a business page and click "Request information".') + '</p>') + '</div>' + how + '</div>' + disclaimer();
   }
 
   function viewOpportunites() {
@@ -569,8 +728,8 @@
       card(t('Comment lire le KAME Score', 'How to read the KAME Score'), '<div class="inv-levels">' + ['A', 'B', 'C', 'D', 'E'].map(function (l, i) {
         var min = [80, 70, 60, 50, 0][i], max = [100, 79, 69, 59, 49][i];
         return '<span>' + lvChip(max) + min + '–' + max + '</span>';
-      }).join('') + '</div><p>' + t('Le score combine la régularité des revenus, l\'historique de paiement, le niveau d\'endettement, l\'ancienneté et la conformité (identité et documents vérifiés). Il est calculé à partir des données que chaque entreprise partage avec son accord.',
-        'The score combines revenue regularity, payment history, debt level, track record and compliance (verified identity and documents). It is computed from the data each company shares with its consent.') + '</p>') + disclaimer();
+      }).join('') + '</div><p>' + t('Le score combine la régularité des revenus, l\'historique de paiement, le niveau d\'endettement, l\'ancienneté, la conformité (identité et documents vérifiés) et la transparence (réponses aux demandes des investisseurs). Il est calculé à partir des données que chaque entreprise partage avec son accord, de la même façon pour toutes.',
+        'The score combines revenue regularity, payment history, debt level, track record, compliance (verified identity and documents) and transparency (answers to investor requests). It is computed from the data each company shares with its consent, the same way for all.') + '</p>') + disclaimer();
   }
 
   function viewData() {
@@ -628,14 +787,14 @@
         (sp.structure || sp.ville ? '<dl class="inv-facts wide">' + (sp.structure ? '<div><dt>' + t('Structure', 'Organisation') + '</dt><dd>' + esc(sp.structure) + '</dd></div>' : '') +
           (sp.ville ? '<div><dt>' + t('Ville', 'City') + '</dt><dd>' + esc(sp.ville) + '</dd></div>' : '') + '</dl>' : '')) +
       card('KAME ID', '<p class="inv-kid">' + hexIcon('id', '#145B63') + '<span><strong>' + t('Vérification d\'identité', 'Identity verification') + '</strong><span class="inv-meta">' +
-        t('Bientôt disponible : pièce d\'identité et selfie, pour obtenir votre badge « Identité vérifiée » et accéder aux données détaillées.',
+        t('Bientôt disponible : pièce d\'identité et selfie, pour obtenir votre badge « Identité vérifiée » et accéder aux données détaillées.',
           'Coming soon: ID document and selfie, to get your "Verified identity" badge and access detailed data.') + '</span></span></p>' +
         '<span class="inv-chip warn">' + t('Bientôt', 'Soon') + '</span>') +
       card(t('Préférences d\'investissement', 'Investment preferences'), '<p>' + t('Secteurs suivis', 'Sectors followed') + '</p><div class="inv-chips static">' +
         state.followed.map(function (id) { return BY_ID[id].sector; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).map(function (k) { return '<span>' + sectorName(k) + '</span>'; }).join('') + '</div>' +
         '<p class="inv-foot-note">' + t('Bientôt : choisissez vos secteurs et vos montants pour recevoir les opportunités qui vous correspondent.', 'Coming soon: choose your sectors and amounts to receive matching opportunities.') + '</p>') +
       card(t('Sécurité du compte', 'Account security'), '<ul class="inv-docs"><li>' + hexIcon('lock', '#145B63') + '<span><strong>' + t('Mot de passe', 'Password') + '</strong><span class="inv-meta">' +
-        t('Pour le changer, utilisez « Mot de passe oublié » sur la page de connexion.', 'To change it, use "Forgot password" on the login page.') + '</span></span></li><li>' + hexIcon('shield', '#145B63') + '<span><strong>' +
+        t('Pour le changer, utilisez « Mot de passe oublié » sur la page de connexion.', 'To change it, use "Forgot password" on the login page.') + '</span></span></li><li>' + hexIcon('shield', '#145B63') + '<span><strong>' +
         t('Double authentification', 'Two-step verification') + '</strong><span class="inv-meta">' + t('Bientôt disponible', 'Coming soon') + '</span></span></li></ul>') + '</div>';
   }
 
@@ -653,6 +812,7 @@
       case 'annuaire': html = viewAnnuaire(); break;
       case 'opportunites': html = viewOpportunites(); break;
       case 'portefeuille': html = viewPortefeuille(); break;
+      case 'demandes': html = viewDemandes(); break;
       case 'score': html = viewScore(); break;
       case 'data': html = viewData(); break;
       case 'registre': html = viewRegistre(); break;
@@ -688,7 +848,7 @@
     keepFocus = false;
   }
   // Redessine la vue en cours en gardant le focus sur le même contrôle
-  var FOCUS_KEYS = ['data-filter', 'data-sector', 'data-opptype', 'data-scoresector', 'data-follow', 'data-interest', 'data-request'];
+  var FOCUS_KEYS = ['data-filter', 'data-sector', 'data-opptype', 'data-scoresector', 'data-reqfilter', 'data-ask', 'data-follow', 'data-interest', 'data-request'];
   function rerender() {
     if (!active || !currentView) return;
     var el = document.activeElement, key = null;
@@ -721,31 +881,110 @@
     '<div class="inv-dialog-actions"><button type="button" class="btn btn-outline btn-sm" data-close>' + t('Annuler', 'Cancel') + '</button>' +
     '<button type="button" class="btn btn-primary btn-sm" data-confirm>' + t('Envoyer', 'Send') + '</button></div></div>';
   document.body.appendChild(modal);
-  var modalFor = null, lastFocus = null;
+  var modalCfg = null, lastFocus = null;
+  // cfg : title, body, confirm (texte du bouton), check() → message d'erreur ou rien, done() après fermeture
+  function openModal(cfg) {
+    modalCfg = cfg;
+    toastEl.classList.remove('on');   // le message ne doit pas cacher les boutons de la fenêtre
+    lastFocus = document.activeElement;
+    modal.querySelector('h2').innerHTML = cfg.title;
+    modal.querySelector('.inv-dialog-body').innerHTML = cfg.body + '<p class="inv-form-error" role="alert" hidden></p>';
+    modal.querySelector('[data-confirm]').innerHTML = cfg.confirm || t('Envoyer', 'Send');
+    modal.hidden = false;
+    var first = modal.querySelector('input:not([disabled]), textarea');
+    if (first) first.focus();
+  }
+  function closeModal() { modal.hidden = true; modalCfg = null; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal || e.target.closest('[data-close]')) { closeModal(); return; }
+    if (!e.target.closest('[data-confirm]') || !modalCfg) return;
+    var cfg = modalCfg;
+    var err = cfg.check ? cfg.check() : '';
+    var box = modal.querySelector('.inv-form-error');
+    if (err) { box.innerHTML = err; box.hidden = false; return; }
+    closeModal();
+    cfg.done();
+  });
+  // « Autre » : le champ pour préciser n'apparaît que si on le choisit
+  modal.addEventListener('change', function (e) {
+    if (e.target.name !== 'req-item') return;
+    var other = modal.querySelector('[name="req-custom"]');
+    if (!other) return;
+    other.hidden = e.target.value !== 'autre';
+    if (!other.hidden) other.focus();
+  });
+
   function openInterest(id) {
     var c = BY_ID[id];
-    modalFor = id;
-    lastFocus = document.activeElement;
-    modal.querySelector('h2').innerHTML = t('Manifester mon intérêt', 'Express interest');
-    modal.querySelector('.inv-dialog-body').innerHTML = '<p>' + t('KAME transmettra votre intérêt à ', 'KAME will pass your interest on to ') + '<strong>' + esc(c.name) + '</strong>' +
-      t(' et organisera la mise en relation. Aucun paiement ne passe par la plateforme.', ' and arrange an introduction. No payment goes through the platform.') + '</p>' +
-      '<label class="inv-field"><span>' + t('Message (facultatif)', 'Message (optional)') + '</span><textarea rows="3" maxlength="600"></textarea></label>' +
-      '<p class="inv-foot-note">' + t('Démonstration : rien n\'est envoyé pour le moment.', 'Demo: nothing is sent for now.') + '</p>';
-    modal.hidden = false;
-    modal.querySelector('textarea').focus();
+    openModal({
+      title: t('Manifester mon intérêt', 'Express interest'),
+      body: '<p>' + t('KAME transmettra votre intérêt à ', 'KAME will pass your interest on to ') + '<strong>' + esc(c.name) + '</strong>' +
+        t(' et organisera la mise en relation. Aucun paiement ne passe par la plateforme.', ' and arrange an introduction. No payment goes through the platform.') + '</p>' +
+        '<label class="inv-field"><span>' + t('Message (facultatif)', 'Message (optional)') + '</span><textarea rows="3" maxlength="600"></textarea></label>' +
+        '<p class="inv-foot-note">' + t('Démonstration : rien n\'est envoyé pour le moment.', 'Demo: nothing is sent for now.') + '</p>',
+      done: function () {
+        state.interest[id] = true;
+        rerender();
+        toast(ic('ok', 18, 2.4) + '<span>' + t('Démo : votre intérêt pour ' + c.name + ' est noté. En version réelle, KAME vous mettra en relation.',
+          'Demo: your interest in ' + c.name + ' is noted. In the live version, KAME will put you in touch.') + '</span>');
+      }
+    });
   }
-  function closeModal() { modal.hidden = true; modalFor = null; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
-  modal.addEventListener('click', function (e) {
-    if (e.target === modal || e.target.closest('[data-close]')) closeModal();
-    else if (e.target.closest('[data-confirm]')) {
-      var c = BY_ID[modalFor];
-      state.interest[modalFor] = true;
-      closeModal();
-      rerender();
-      toast(ic('ok', 18, 2.4) + '<span>' + t('Démo : votre intérêt pour ' + c.name + ' est noté. En version réelle, KAME vous mettra en relation.',
-        'Demo: your interest in ' + c.name + ' is noted. In the live version, KAME will put you in touch.') + '</span>');
-    }
-  });
+
+  function openRequest(id) {
+    var c = BY_ID[id];
+    // Un document déjà demandé (en cours ou vérifié) ne peut pas être redemandé
+    var taken = {};
+    state.requests.forEach(function (r) { if (r.company === id && r.status !== 'refusee' && r.item !== 'autre') taken[r.item] = true; });
+    var choices = REQ_ITEMS.map(function (x) {
+      return '<label class="inv-choice' + (taken[x.id] ? ' is-taken' : '') + '"><input type="radio" name="req-item" value="' + x.id + '"' + (taken[x.id] ? ' disabled' : '') + '><span>' +
+        t(x.fr, x.en) + (taken[x.id] ? ' <em>' + t('(déjà demandé)', '(already requested)') + '</em>' : '') + '</span></label>';
+    }).join('') + '<label class="inv-choice"><input type="radio" name="req-item" value="autre"><span>' + t('Autre document ou information', 'Another document or information') + '</span></label>' +
+      '<input type="text" class="inv-input" name="req-custom" maxlength="120" hidden aria-label="' + esc(L('Précisez le document ou l\'information', 'Specify the document or information')) +
+      '" placeholder="' + esc(L('Précisez : par exemple, la liste des principaux fournisseurs', 'Specify: for example, the list of main suppliers')) + '">';
+    openModal({
+      title: t('Demander une information à ', 'Request information from ') + esc(c.name),
+      confirm: t('Envoyer la demande', 'Send the request'),
+      body: '<p>' + t('KAME vérifie chaque demande avant de la transmettre à l\'entreprise. L\'entreprise peut accepter ou refuser en expliquant pourquoi.',
+          'KAME checks each request before passing it on to the business. The business can accept or decline with a reason.') + '</p>' +
+        '<fieldset class="inv-choices"><legend>' + t('Que souhaitez-vous obtenir ?', 'What would you like to receive?') + '</legend>' + choices + '</fieldset>' +
+        '<label class="inv-field"><span>' + t('Pourquoi en avez-vous besoin ? (facultatif)', 'Why do you need it? (optional)') + '</span><textarea name="req-note" rows="2" maxlength="400"></textarea></label>' +
+        '<p class="inv-foot-note">' + t('Les données personnelles des employés ne peuvent pas être demandées. Démonstration : rien n\'est envoyé à l\'entreprise.',
+          'Personal data about employees cannot be requested. Demo: nothing is sent to the business.') + '</p>',
+      check: function () {
+        var sel = modal.querySelector('[name="req-item"]:checked');
+        if (!sel) return t('Choisissez un document ou une information.', 'Choose a document or piece of information.');
+        if (sel.value === 'autre' && modal.querySelector('[name="req-custom"]').value.trim().length < 4) {
+          return t('Précisez ce que vous souhaitez obtenir.', 'Specify what you would like to receive.');
+        }
+        return '';
+      },
+      // La fenêtre est seulement masquée à la fermeture : ses champs se lisent encore ici
+      done: function () {
+        sendRequest({ id: 'r' + Date.now(), company: id, item: modal.querySelector('[name="req-item"]:checked').value,
+                      custom: modal.querySelector('[name="req-custom"]').value.trim(), note: modal.querySelector('[name="req-note"]').value.trim(),
+                      status: 'envoyee', sent: daysAgo(0) });
+      }
+    });
+  }
+
+  // Démo : la demande passe « transmise » quelques secondes après, avec une notification
+  function sendRequest(r) {
+    var c = BY_ID[r.company];
+    state.requests.unshift(r);
+    updateBadges();
+    rerender();
+    toast(ic('ok', 18, 2.4) + '<span>' + t('Demande envoyée. KAME la vérifie avant de la transmettre à ' + c.name + '. Suivez-la dans « Mes demandes ».',
+      'Request sent. KAME checks it before passing it on to ' + c.name + '. Track it in "My requests".') + '</span>');
+    setTimeout(function () {
+      if (r.status !== 'envoyee') return;
+      r.status = 'transmise';
+      addNotif({ icon: 'file', go: '#demandes', when: ['À l\'instant', 'Just now'],
+        fr: 'Votre demande à ' + c.name + ' a été vérifiée par KAME et transmise à l\'entreprise.',
+        en: 'Your request to ' + c.name + ' was checked by KAME and passed on to the business.' });
+      if (currentView === 'demandes' || currentView === 'entreprise') rerender();
+    }, 5000);
+  }
 
   shell.addEventListener('click', function (e) {
     var b = e.target.closest('button');
@@ -762,6 +1001,8 @@
       return;
     }
     if (b.hasAttribute('data-interest')) { if (!state.interest[b.getAttribute('data-interest')]) openInterest(b.getAttribute('data-interest')); return; }
+    if (b.hasAttribute('data-ask')) { openRequest(b.getAttribute('data-ask')); return; }
+    if (b.hasAttribute('data-reqfilter')) { state.reqFilter = b.getAttribute('data-reqfilter'); rerender(); return; }
     if (b.hasAttribute('data-request')) {
       state.requested[b.getAttribute('data-request')] = true;
       rerender();
@@ -848,9 +1089,8 @@
     closePanels(k);
     if (k === 'notifs' && open) {
       p.el.innerHTML = '<p class="mh-panel-title">' + t('Notifications', 'Notifications') + '</p><ul class="inv-notifs">' + notifications().map(notifItem).join('') + '</ul>';
-      state.read = true;
-      var cnt = document.querySelector('[data-notif-count]');
-      if (cnt) cnt.hidden = true;
+      state.unread = 0;
+      updateBadges();
     }
     p.el.hidden = !open;
     if (p.btn) p.btn.setAttribute('aria-expanded', String(open));
@@ -866,9 +1106,9 @@
     closePanels();
   });
   document.addEventListener('keydown', function (e) {
-    // Tabulation gardée dans la fenêtre « Manifester mon intérêt » tant qu'elle est ouverte
+    // Tabulation gardée dans la fenêtre « Manifester mon intérêt » tant qu'elle est ouverte
     if (e.key === 'Tab' && !modal.hidden) {
-      var f = modal.querySelectorAll('textarea, button');
+      var f = Array.prototype.filter.call(modal.querySelectorAll('input, textarea, button'), function (el) { return !el.disabled && !el.hidden; });
       var first = f[0], last = f[f.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
@@ -904,8 +1144,8 @@
   function start() {
     if (active || !shell || shell.hidden) return;
     active = true;
-    var cnt = document.querySelector('[data-notif-count]');
-    if (cnt && !state.read) { cnt.textContent = String(notifications().length); cnt.hidden = false; }
+    if (state.unread === null) state.unread = notifications().length;
+    updateBadges();
     route(false);
   }
   if (shell) {
