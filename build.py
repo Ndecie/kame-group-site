@@ -208,6 +208,22 @@ ICONS = {
     'menu': '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>',
     'close': '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
     'chat': '<path d="M4 5h16v11H9l-5 4z"/>',
+    # Espace entreprise et commerçant
+    'plus': '<path d="M12 5v14"/><path d="M5 12h14"/>',
+    'copy': '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+    'receipt': '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h3"/>',
+    'users': '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.4 3.4-5.5 6.5-5.5s5.7 2.1 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14.8c1.9.8 3.1 2.5 3.5 5.2"/>',
+    'download': '<path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>',
+    'send': '<path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/>',
+    'eye': '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    'edit': '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+    'code': '<path d="m8 8-5 4 5 4"/><path d="m16 8 5 4-5 4"/><path d="m14 4-4 16"/>',
+    'key': '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/>',
+    'alert': '<path d="M12 3 2 20h20z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
+    'calendar': '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/>',
+    'box': '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5"/><path d="M12 12v9"/>',
+    'cart': '<circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M3 4h2.5l2.2 11h10.6l2-8H6.6"/>',
+    'link': '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
 }
 
 
@@ -604,6 +620,8 @@ def member_header():
     links = [
         ('#profil', 'user', 'Mon profil', 'My profile', ' data-inv-only'),
         ('#portefeuille', 'briefcase', 'Mon portefeuille', 'My portfolio', ' data-inv-only'),
+        ('#e-entreprise', 'building', 'Mon entreprise', 'My business', ' data-biz-only data-biz-menu-label'),
+        ('#e-garde', 'garde', 'Sécurité et équipe', 'Security and team', ' data-biz-only'),
         ('index.html#contact', 'help', 'Aide et support', 'Help &amp; support', ''),
         ('index.html', 'home', 'Voir le site KAME GROUP', 'Visit the KAME GROUP site', ''),
     ]
@@ -617,7 +635,7 @@ def member_header():
             '<form class="mh-search" role="search" data-inv-only><label class="sr-only" for="mh-q">%s</label>%s'
             '<input id="mh-q" type="search" autocomplete="off" %s></form>'
             '<div class="mh-actions"><div class="mh-lang-top">%s</div>'
-            '<div class="mh-pop" data-inv-only><button type="button" class="mh-icon-btn mh-bell" aria-expanded="false" aria-controls="mh-notifs" %s>'
+            '<div class="mh-pop" data-space-only><button type="button" class="mh-icon-btn mh-bell" aria-expanded="false" aria-controls="mh-notifs" %s>'
             '%s<span class="mh-count" data-notif-count hidden></span></button><div class="mh-panel mh-notifs" id="mh-notifs" hidden></div></div>'
             '<div class="mh-pop"><button type="button" class="mh-me" aria-expanded="false" aria-controls="mh-menu">'
             '<span class="mh-avatar" data-initial>K</span><span class="mh-who"><strong data-first-name></strong><small data-role-label></small></span>%s</button>'
@@ -1600,11 +1618,16 @@ def space_page():
               % (T("L'espace membre ouvre bientôt", 'The member area opens soon'),
                  T("La connexion n'est pas encore activée. Revenez dans quelques jours.", 'Sign-in is not switched on yet. Please come back in a few days.'),
                  T('Nous écrire', 'Write to us')))
-    main = ('<section class="section section-tight inv-section"><div class="container container-wide"><div class="space" id="space">%s%s%s%s%s</div></div></section>'
-            % (loading, pending, dash, investor_shell(), closed))
+    # Demande d'un espace de plus (entreprise, commerçant…) : alerte e-mail pour l'équipe KAME, qui valide dans Netlify
+    space_form = ('<form name="nouvel-espace" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>'
+                  '<input type="hidden" name="form-name" value="nouvel-espace"><input name="bot-field">%s</form>'
+                  % ''.join('<input name="%s">' % n for n in NEW_SPACE_FIELDS))
+    main = ('<section class="section section-tight inv-section"><div class="container container-wide"><div class="space" id="space">%s%s%s%s%s%s</div>%s</div></section>'
+            % (loading, pending, dash, investor_shell(), business_shell(), closed, space_form))
     page('espace-membre.html', 'Mon espace | KAME GROUP', 'My space | KAME GROUP', 'Espace membre KAME GROUP.', main, noindex=True,
          brand_href='espace-membre.html', member=True,
-         scripts='<script src="assets/js/kame-icons.js" defer></script>\n<script src="assets/js/investor.js" defer></script>\n')
+         scripts='<script src="assets/js/kame-icons.js" defer></script>\n<script src="assets/js/kame-ui.js" defer></script>\n'
+                 '<script src="assets/js/investor.js" defer></script>\n<script src="assets/js/business.js" defer></script>\n')
 
 
 INV_VIEWS = ['accueil', 'annuaire', 'opportunites', 'portefeuille', 'demandes', 'score', 'data', 'registre', 'profil', 'entreprise']
@@ -1636,6 +1659,24 @@ def investor_shell():
                bi_attr('placeholder', 'Rechercher une entreprise…', 'Search a company…'), icon('info', 18, 2),
                T('Version de démonstration : les entreprises, les montants et les scores affichés sont fictifs.',
                  'Demo version: the companies, amounts and scores shown are fictitious.'), views))
+
+
+NEW_SPACE_FIELDS = ['email', 'nom', 'espace', 'structure', 'secteur', 'ville', 'agriculture', 'message', 'espaces_actuels', 'langue']
+BIZ_VIEWS = ['e-accueil', 'e-entreprise', 'e-id', 'e-data', 'e-score', 'e-check', 'e-registre', 'e-garde', 'e-investisseurs', 'e-demandes',
+             'e-levees', 'e-documents', 'e-agro']
+
+
+def business_shell():
+    # Espace entreprise et commerçant : le menu de gauche est rempli par business.js (il change selon le profil)
+    side_card = ('<div class="inv-side-card biz-side-card">%s<p data-biz-side-text></p><a class="btn btn-light btn-sm" href="#e-score" data-biz-side-btn></a></div>'
+                 % presenter_bee('business', cls='bee-mini'))
+    views = ''.join('<section class="inv-view" data-view="%s" hidden tabindex="-1"></section>' % v for v in BIZ_VIEWS)
+    return ('<div class="space-panel inv-shell biz-shell" id="space-business" hidden>'
+            '<aside class="inv-side"><nav class="inv-nav" data-biz-nav %s></nav>%s</aside>'
+            '<div class="inv-main"><p class="inv-ribbon">%s<span>%s</span></p>%s</div></div>'
+            % (bi_attr('aria-label', 'Espace entreprise', 'Business space'), side_card, icon('info', 18, 2),
+               T("Version de démonstration : les chiffres, les clients et les investisseurs affichés sont fictifs, et rien de ce que vous faites ici n'est envoyé.",
+                 'Demo version: the figures, customers and investors shown are fictitious, and nothing you do here is sent anywhere.'), views))
 
 
 def build_auth_pages():

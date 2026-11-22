@@ -14,6 +14,10 @@
     partenaire: { prefix: 'KG-PAR', fr: 'Partenaire', en: 'Partner' }
   };
   var ROLE_ORDER = ['investisseur', 'entreprise', 'commercant', 'partenaire'];
+  // Espaces qui ouvrent le tableau de bord entreprise (business.js)
+  var BUSINESS_ROLES = ['entreprise', 'commercant'];
+  var SPACE_KEY = 'kame-space';
+  var INVESTOR_VIEWS = ['accueil', 'annuaire', 'opportunites', 'portefeuille', 'demandes', 'score', 'data', 'registre', 'profil', 'entreprise'];
   var HASH_KEYS = ['confirmation_token', 'recovery_token', 'invite_token', 'access_token', 'error', 'email_change_token'];
 
   // ------------------------------------------------------------ outils
@@ -23,6 +27,12 @@
     });
   }
   function tx(fr, en) { return '<span class="t-fr">' + esc(fr) + '</span><span class="t-en" lang="en">' + esc(en) + '</span>'; }
+  function svg(name, size) {
+    var icons = window.KAME_ICONS || {};
+    if (!icons[name]) return '';
+    return '<svg aria-hidden="true" focusable="false" width="' + (size || 18) + '" height="' + (size || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + icons[name] + '</svg>';
+  }
   function lang() { return document.documentElement.lang === 'en' ? 'en' : 'fr'; }
   function enc(o) {
     return Object.keys(o).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(o[k] == null ? '' : o[k]); }).join('&');
@@ -353,11 +363,32 @@
 
   // ------------------------------------------------------------ espace membre
   function initSpace(root) {
+    var currentUser = null, currentRoles = [], activeRole = null;
+    // Menu du compte : l'espace ouvert est marqué comme actuel
+    function markSpaces() {
+      document.querySelectorAll('[data-space-role]').forEach(function (el) {
+        el.setAttribute('aria-current', String(el.getAttribute('data-space-role') === activeRole));
+      });
+    }
     function show(name) {
       root.querySelectorAll('.space-panel').forEach(function (p) { p.hidden = p.id !== 'space-' + name; });
-      // Espace investisseur : mise en page large et éléments du bandeau réservés (recherche, notifications)
-      root.classList.toggle('space-wide', name === 'investor');
+      // Espaces investisseur et entreprise : mise en page large et éléments du bandeau réservés (recherche, notifications)
+      var wide = name === 'investor' || name === 'business';
+      root.classList.toggle('space-wide', wide);
       document.documentElement.classList.toggle('inv-on', name === 'investor');
+      document.documentElement.classList.toggle('biz-on', name === 'business');
+    }
+    // Demandes d'espace en plus, enregistrées dans le compte (user_metadata) ; le rôle n'est donné que par l'équipe KAME
+    function requestsOf(m) {
+      return Array.isArray(m && m.espaces_demandes) ? m.espaces_demandes.filter(function (r) { return r && ROLES[r.role]; }) : [];
+    }
+    function pendingOf(m, roles) { return requestsOf(m).filter(function (r) { return roles.indexOf(r.role) < 0; }); }
+    // Ce que l'espace entreprise affiche : la demande d'espace d'abord, sinon les informations de l'inscription
+    function businessInfo(m, role) {
+      var req = requestsOf(m).filter(function (r) { return r.role === role; })[0];
+      var agri = req ? req.agriculture === 'oui' : m.agriculture === 'oui';
+      return { role: role, name: (req && req.structure) || m.structure || '', sector: (req && req.secteur) || '',
+               city: (req && req.ville) || m.ville || '', agriculture: agri, agriType: agri ? (m.agri_type || '') : '' };
     }
     function label(r) { return r && ROLES[r] ? tx(ROLES[r].fr, ROLES[r].en) : '—'; }
     function firstName(u) {
@@ -372,6 +403,7 @@
     function render(u) {
       var m = u.user_metadata || {};
       if (!m.profil) { location.replace('/connexion.html'); return; }
+      currentUser = u;
       var first = firstName(u);
       document.querySelectorAll('[data-first-name]').forEach(function (el) { el.textContent = first; });
       document.querySelectorAll('[data-initial]').forEach(function (el) { el.textContent = (first.charAt(0) || 'K').toUpperCase(); });
@@ -410,54 +442,204 @@
         tabsEl.hidden = true;
       }
       root.classList.toggle('has-agro', m.agriculture === 'oui');
+      currentRoles = roles;
 
       // Espace investisseur (nouveau tableau de bord) ; les autres profils gardent leur espace actuel
       window.KAME_SPACE = {
         firstName: first, fullName: m.full_name || '', email: u.email || '', roles: roles,
         ids: roles.reduce(function (o, r) { o[r] = memberId(u, r); return o; }, {}),
-        structure: m.structure || '', ville: m.ville || '', agriculture: m.agriculture === 'oui'
+        structure: m.structure || '', ville: m.ville || '', agriculture: m.agriculture === 'oui',
+        pending: pendingOf(m, roles), business: null
       };
       function roleLabel(r) {
         document.querySelectorAll('[data-role-label]').forEach(function (el) { el.innerHTML = label(r); });
       }
-      function showRole(r) {
+      function showRole(r, fromUser) {
+        activeRole = r;
         roleLabel(r);
-        // Menu du compte : l'espace ouvert est marqué comme actuel
-        document.querySelectorAll('[data-space-role]').forEach(function (el) {
-          el.setAttribute('aria-current', String(el.getAttribute('data-space-role') === r));
-        });
+        store(SPACE_KEY, r);
+        markSpaces();
+        // Changement d'espace demandé par la personne : on repart de l'accueil de l'espace, en haut de la page
+        if (fromUser) {
+          if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+          window.scrollTo(0, 0);
+        }
         if (r === 'investisseur') {
           show('investor');
           document.dispatchEvent(new CustomEvent('kame:investor', { detail: window.KAME_SPACE }));
+        } else if (BUSINESS_ROLES.indexOf(r) >= 0) {
+          window.KAME_SPACE.business = businessInfo(m, r);
+          show('business');
+          document.dispatchEvent(new CustomEvent('kame:business', { detail: { role: r } }));
         } else {
           pick(r);
           show('dash');
         }
       }
       window.KAME_SHOW_ROLE = showRole;
-      var spaces = document.querySelector('[data-other-spaces]');
-      if (spaces) {
-        if (roles.length > 1) {
-          spaces.innerHTML = '<p class="mh-spaces-title">' + tx('Mes espaces', 'My spaces') + '</p>' + roles.map(function (r) {
-            return '<button type="button" data-space-role="' + r + '">' + label(r) + '</button>';
-          }).join('');
-          spaces.querySelectorAll('[data-space-role]').forEach(function (b) {
-            b.addEventListener('click', function () { showRole(b.getAttribute('data-space-role')); });
-          });
-          spaces.hidden = false;
-        } else {
-          spaces.hidden = true;
-        }
+      renderSpaces();
+      if (spacesBox && !spacesBox.hasAttribute('data-ready')) {
+        spacesBox.setAttribute('data-ready', '');
+        spacesBox.addEventListener('click', function (e) {
+          var b = e.target.closest('[data-space-role]');
+          if (b) showRole(b.getAttribute('data-space-role'), true);
+        });
       }
       if (roles.length > 1) {
         tabsEl.querySelectorAll('button').forEach(function (b) {
-          if (b.getAttribute('data-role') === 'investisseur') {
-            b.addEventListener('click', function (e) { e.stopImmediatePropagation(); showRole('investisseur'); }, true);
+          var r = b.getAttribute('data-role');
+          if (r === 'investisseur' || BUSINESS_ROLES.indexOf(r) >= 0) {
+            b.addEventListener('click', function (e) { e.stopImmediatePropagation(); showRole(r, true); }, true);
           }
         });
       }
-      showRole(roles[0]);
+      // Espace ouvert au départ : celui de l'adresse (#e-… pour l'entreprise), sinon le dernier utilisé, sinon le premier
+      var startRole = roles[0];
+      var h = location.hash.replace(/^#\/?/, '').split('/')[0];
+      var stored = read(SPACE_KEY);
+      var biz = roles.filter(function (r) { return BUSINESS_ROLES.indexOf(r) >= 0; })[0];
+      if (h.indexOf('e-') === 0 && biz) startRole = biz;
+      else if (INVESTOR_VIEWS.indexOf(h) >= 0 && roles.indexOf('investisseur') >= 0) startRole = 'investisseur';
+      else if (stored && roles.indexOf(stored) >= 0) startRole = stored;
+      showRole(startRole);
     }
+
+    // ------------------------------------------------------------ « Mes espaces » (menu du compte) et demande d'un espace en plus
+    var spacesBox = document.querySelector('[data-other-spaces]');
+    var ADD_ORDER = ['entreprise', 'commercant', 'partenaire', 'investisseur'];
+    var SPACE_DESC = {
+      entreprise: ['PME, startup, coopérative : pilotez votre activité, votre KAME Score et vos relations avec les investisseurs.',
+                   'SME, startup, cooperative: run your business, your KAME Score and your relations with investors.'],
+      commercant: ['Boutique, marché, vente en ligne : suivez vos ventes, émettez des reçus fiables, obtenez un financement.',
+                   'Shop, market stall, online sales: track your sales, issue trusted receipts, get funding.'],
+      partenaire: ['Banque, microfinance, fintech, institution : construisons des services ensemble.',
+                   'Bank, microfinance, fintech, institution: let us build services together.'],
+      investisseur: ['Repérez les entreprises fiables du Gabon et suivez leur progression.', 'Find reliable businesses in Gabon and follow their progress.']
+    };
+    var NAME_LABEL = {
+      entreprise: ['Nom de l\'entreprise', 'Business name'], commercant: ['Nom de votre commerce (ou votre nom)', 'Name of your shop (or your name)'],
+      partenaire: ['Nom de la structure', 'Organisation name'], investisseur: ['Société d\'investissement (facultatif)', 'Investment company (optional)']
+    };
+    function addable(m) {
+      var pend = pendingOf(m, currentRoles).map(function (r) { return r.role; });
+      return ADD_ORDER.filter(function (r) { return currentRoles.indexOf(r) < 0 && pend.indexOf(r) < 0; });
+    }
+    function renderSpaces() {
+      if (!spacesBox || !currentUser) return;
+      var m = currentUser.user_metadata || {};
+      var pend = pendingOf(m, currentRoles);
+      spacesBox.innerHTML = '<p class="mh-spaces-title">' + tx('Mes espaces', 'My spaces') + '</p>' +
+        currentRoles.map(function (r) { return '<button type="button" data-space-role="' + r + '">' + label(r) + '</button>'; }).join('') +
+        pend.map(function (r) {
+          return '<p class="mh-space-pending">' + svg('clock', 17) + '<span>' + label(r.role) + '<small>' + tx('En attente de validation', 'Awaiting approval') + '</small></span></p>';
+        }).join('') +
+        (addable(m).length ? '<button type="button" class="mh-add-space" data-add-space>' + svg('plus', 18) + tx('Ajouter un espace', 'Add a space') + '</button>' : '');
+      spacesBox.hidden = false;
+      markSpaces();
+    }
+    function sectorOptions() {
+      var U = window.KAME_UI;
+      return '<option value="">' + esc(lang() === 'en' ? 'Choose…' : 'Choisir…') + '</option>' + U.SECTOR_ORDER.map(function (k) {
+        return '<option value="' + k + '">' + esc(lang() === 'en' ? U.SECTORS[k].en : U.SECTORS[k].fr) + '</option>';
+      }).join('');
+    }
+    function openAddSpace() {
+      var U = window.KAME_UI;
+      if (!U || !currentUser) return;
+      var m = currentUser.user_metadata || {};
+      var pend = pendingOf(m, currentRoles).map(function (r) { return r.role; });
+      var choices = ADD_ORDER.map(function (r) {
+        var has = currentRoles.indexOf(r) >= 0, wait = pend.indexOf(r) >= 0;
+        return '<label class="inv-choice' + (has || wait ? ' is-taken' : '') + '"><input type="radio" name="sp-role" value="' + r + '"' + (has || wait ? ' disabled' : '') + '>' +
+          '<span class="sp-choice"><strong>' + label(r) + (has ? ' <em>' + tx('(déjà ouvert)', '(already open)') + '</em>' : (wait ? ' <em>' + tx('(demande en cours)', '(request pending)') + '</em>' : '')) +
+          '</strong><small>' + tx(SPACE_DESC[r][0], SPACE_DESC[r][1]) + '</small></span></label>';
+      }).join('');
+      U.openModal({
+        title: tx('Ajouter un espace', 'Add a space'),
+        confirm: tx('Envoyer ma demande', 'Send my request'),
+        body: '<p>' + tx('Avec le même compte et le même e-mail, vous pouvez avoir plusieurs espaces. L\'équipe KAME vérifie chaque demande avant d\'ouvrir le nouvel espace.',
+                         'With the same account and email, you can have several spaces. The KAME team checks each request before opening the new space.') + '</p>' +
+          '<fieldset class="inv-choices"><legend>' + tx('Quel espace souhaitez-vous ajouter ?', 'Which space would you like to add?') + '</legend>' + choices + '</fieldset>' +
+          '<div class="sp-details" hidden>' +
+          '<label class="inv-field"><span data-sp-name-label></span><input class="inv-input" name="sp-structure" maxlength="120" autocomplete="organization"></label>' +
+          '<label class="inv-field" data-sp-biz><span>' + tx('Secteur d\'activité', 'Sector') + '</span><select class="inv-input" name="sp-secteur">' + sectorOptions() + '</select></label>' +
+          '<label class="inv-field"><span>' + tx('Ville', 'City') + '</span><input class="inv-input" name="sp-ville" maxlength="80" autocomplete="address-level2" value="' + esc(m.ville || '') + '"></label>' +
+          '<fieldset class="inv-choices inline" data-sp-biz><legend>' + tx('Avez-vous une activité agricole ?', 'Do you have a farming activity?') + '</legend>' +
+          '<label class="inv-choice"><input type="radio" name="sp-agri" value="oui"><span>' + tx('Oui', 'Yes') + '</span></label>' +
+          '<label class="inv-choice"><input type="radio" name="sp-agri" value="non" checked><span>' + tx('Non', 'No') + '</span></label></fieldset>' +
+          '<label class="inv-field"><span>' + tx('Message pour l\'équipe KAME (facultatif)', 'Message for the KAME team (optional)') + '</span><textarea name="sp-message" rows="2" maxlength="500"></textarea></label>' +
+          '</div>' +
+          '<p class="inv-foot-note">' + tx('Les justificatifs vous seront demandés plus tard, de façon sécurisée. N\'envoyez aucun document ici.',
+                                           'Supporting documents will be requested later, securely. Do not send any documents here.') + '</p>',
+        check: function (box) {
+          var sel = box.querySelector('[name="sp-role"]:checked');
+          if (!sel) return tx('Choisissez l\'espace à ajouter.', 'Choose the space to add.');
+          var r = sel.value;
+          if (r !== 'investisseur' && box.querySelector('[name="sp-structure"]').value.trim().length < 2) {
+            return r === 'commercant' ? tx('Indiquez le nom de votre commerce, ou votre nom.', 'Enter the name of your shop, or your name.')
+                                      : tx('Indiquez le nom de votre ' + (r === 'entreprise' ? 'entreprise' : 'structure') + '.', 'Enter the name of your ' + (r === 'entreprise' ? 'business' : 'organisation') + '.');
+          }
+          if (BUSINESS_ROLES.indexOf(r) >= 0 && !box.querySelector('[name="sp-secteur"]').value) return tx('Choisissez votre secteur d\'activité.', 'Choose your sector.');
+          if (box.querySelector('[name="sp-ville"]').value.trim().length < 2) return tx('Indiquez votre ville.', 'Enter your city.');
+          return '';
+        },
+        submit: function (box) {
+          var r = box.querySelector('[name="sp-role"]:checked').value;
+          var biz = BUSINESS_ROLES.indexOf(r) >= 0;
+          var agri = box.querySelector('[name="sp-agri"]:checked');
+          var req = { role: r, structure: box.querySelector('[name="sp-structure"]').value.trim(), secteur: biz ? box.querySelector('[name="sp-secteur"]').value : '',
+                      ville: box.querySelector('[name="sp-ville"]').value.trim(), agriculture: biz && agri ? agri.value : '',
+                      message: box.querySelector('[name="sp-message"]').value.trim(), date: new Date().toISOString() };
+          var list = requestsOf(m).filter(function (x) { return x.role !== r; }).concat([req]);
+          return updateUser({ data: { espaces_demandes: list } }).then(function (u2) {
+            if (u2 && u2.user_metadata) currentUser = u2;
+            else currentUser.user_metadata = Object.assign({}, m, { espaces_demandes: list });
+            // Alerte e-mail pour l'équipe KAME (formulaire Netlify « nouvel-espace ») ; la demande reste enregistrée même si l'alerte échoue
+            var f = { 'form-name': 'nouvel-espace', email: currentUser.email || '', nom: m.full_name || '', espace: r, structure: req.structure,
+                      secteur: req.secteur, ville: req.ville, agriculture: req.agriculture, message: req.message, espaces_actuels: currentRoles.join(', '), langue: lang() };
+            return fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: enc(f) })
+              .catch(function () {}).then(function () { return req; });
+          });
+        },
+        fail: function (e) {
+          if (e && (e.status === 401 || e.status === 403)) return tx('Votre session a expiré. Reconnectez-vous, puis refaites la demande.', 'Your session has expired. Log in again, then send the request again.');
+          if (e && !e.status) return tx('Impossible de joindre le serveur. Vérifiez votre connexion internet et réessayez.', 'Cannot reach the server. Check your internet connection and try again.');
+          return tx('La demande n\'a pas pu être envoyée. Réessayez dans un instant.', 'The request could not be sent. Please try again in a moment.');
+        },
+        done: function (req) {
+          var mm = currentUser.user_metadata || {};
+          if (window.KAME_SPACE) window.KAME_SPACE.pending = pendingOf(mm, currentRoles);
+          renderSpaces();
+          markSpaces();
+          document.dispatchEvent(new CustomEvent('kame:spaces'));
+          U.toast(tx('Demande envoyée. L\'équipe KAME va la vérifier : vous recevrez un e-mail dès que votre espace ' + ROLES[req.role].fr + ' sera ouvert.',
+                     'Request sent. The KAME team will check it: you will get an email as soon as your ' + ROLES[req.role].en + ' space is open.'));
+        }
+      });
+      syncSpaceForm();
+    }
+    // Les champs suivent l'espace choisi : nom de l'entreprise, secteur et activité agricole pour l'entreprise et le commerçant
+    function syncSpaceForm() {
+      var U = window.KAME_UI;
+      var box = U && U.modal;
+      var details = box && box.querySelector('.sp-details');
+      if (!details) return;
+      var sel = box.querySelector('[name="sp-role"]:checked');
+      details.hidden = !sel;
+      if (!sel) return;
+      var r = sel.value;
+      box.querySelector('[data-sp-name-label]').innerHTML = tx(NAME_LABEL[r][0], NAME_LABEL[r][1]);
+      box.querySelectorAll('[data-sp-biz]').forEach(function (el) { el.hidden = BUSINESS_ROLES.indexOf(r) < 0; });
+    }
+    if (window.KAME_UI) {
+      window.KAME_UI.modal.addEventListener('change', function (e) { if (e.target.name === 'sp-role') syncSpaceForm(); });
+    }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-add-space]');
+      if (!b) return;
+      e.preventDefault();
+      openAddSpace();
+    });
 
     function refresh() {
       show('loading');

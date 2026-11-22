@@ -5,78 +5,20 @@
   'use strict';
 
   var shell = document.getElementById('space-investor');
-  if (!shell) return;
-  var ICONS = window.KAME_ICONS || {};
+  var U = window.KAME_UI;
+  if (!shell || !U) return;
   var root = document.documentElement;
 
-  // ------------------------------------------------------------ outils
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-  // Texte bilingue : les deux langues sont dans la page, la feuille de style affiche la bonne
-  function t(fr, en) { return '<span class="t-fr">' + esc(fr) + '</span><span class="t-en" lang="en">' + esc(en) + '</span>'; }
-  function isEn() { return root.lang === 'en'; }
-  function L(fr, en) { return isEn() ? en : fr; }
-  function ic(name, size, sw) {
-    var s = size || 20;
-    return '<svg aria-hidden="true" focusable="false" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' +
-      (sw || 1.9) + '" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || '') + '</svg>';
-  }
-  // Recherche sans tenir compte des accents ni des majuscules (« energie » trouve « Énergie »)
-  function plain(s) { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
-  // Nombres au format de la langue : 28 690 000 et 28,7 en français ; 28,690,000 et 28.7 en anglais
-  function num(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, isEn() ? ',' : '\u00A0'); }
-  function dec(v) { return isEn() ? String(v) : String(v).replace('.', ','); }
-  function money(n) { return num(n) + '\u00A0FCFA'; }
-  function millions(n) { var m = n / 1e6; return dec(m >= 100 ? Math.round(m) : Math.round(m * 10) / 10) + '\u00A0M'; }
-  function pct(n, signed) { return (signed && n > 0 ? '+' : '') + dec(Math.round(n * 10) / 10) + (isEn() ? '%' : '\u00A0%'); }
-  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-  // Hasard reproductible : les mêmes courbes à chaque visite
-  function rng(seed) {
-    var h = 2166136261;
-    for (var i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
-    return function () {
-      h += 0x6D2B79F5;
-      var x = h;
-      x = Math.imul(x ^ (x >>> 15), x | 1);
-      x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
-      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-  function hex(r, n) { var s = ''; for (var i = 0; i < n; i++) s += '0123456789abcdef'.charAt(Math.floor(r() * 16)); return s; }
-
-  // Les 12 derniers mois, jusqu'au mois en cours
-  var MONTHS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-  var MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  var NOW = new Date();
-  var LAST12 = [];
-  for (var mi = 11; mi >= 0; mi--) {
-    var d = new Date(NOW.getFullYear(), NOW.getMonth() - mi, 1);
-    LAST12.push({ fr: MONTHS_FR[d.getMonth()], en: MONTHS_EN[d.getMonth()], y: d.getFullYear(), m: d.getMonth() });
-  }
-  var LONG_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-  var LONG_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  function fmtDate(d) {
-    return { fr: d.getDate() + ' ' + LONG_FR[d.getMonth()] + ' ' + d.getFullYear(), en: LONG_EN[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear(), ts: d.getTime() };
-  }
-  function dateLabel(monthsAgo, day) { return fmtDate(new Date(NOW.getFullYear(), NOW.getMonth() - monthsAgo, day)); }
-  function daysAgo(n) { return fmtDate(new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate() - n)); }
+  // ------------------------------------------------------------ outils communs (kame-ui.js)
+  var esc = U.esc, t = U.t, L = U.L, ic = U.ic, plain = U.plain, num = U.num, money = U.money, millions = U.millions, pct = U.pct,
+      clamp = U.clamp, rng = U.rng, hex = U.hex, LAST12 = U.LAST12, dateLabel = U.dateLabel, daysAgo = U.daysAgo,
+      level = U.level, lvChip = U.lvChip, trendTag = U.trendTag, hexIcon = U.hexIcon, card = U.card, seeAll = U.seeAll, heading = U.heading,
+      kpi = U.kpi, notifItem = U.notifItem, lineChart = U.lineChart, spark = U.spark, donut = U.donut, bars = U.bars, toast = U.toast,
+      openModal = U.openModal, modal = U.modal, sectorName = U.sectorName;
+  function gauge(c) { return U.gauge(c.score); }
 
   // ------------------------------------------------------------ données de démonstration (fictives)
-  var SECTORS = {
-    // Une couleur bien distincte par secteur (graphiques, icônes), tirée de la palette KAME
-    agriculture: { fr: 'Agriculture et pêche', en: 'Farming and fishing', icon: 'agro', color: '#159E96' },
-    commerce: { fr: 'Commerce', en: 'Retail and trade', icon: 'merchant', color: '#B8734F' },
-    fintech: { fr: 'Fintech', en: 'Fintech', icon: 'pay', color: '#145B63' },
-    services: { fr: 'Services', en: 'Services', icon: 'truck', color: '#6E8C93' },
-    industrie: { fr: 'Industrie', en: 'Industry', icon: 'business', color: '#7A5236' },
-    tech: { fr: 'Technologie', en: 'Technology', icon: 'data', color: '#2F6FA3' },
-    energie: { fr: 'Énergie', en: 'Energy', icon: 'sun', color: '#E0A030' },
-    sante: { fr: 'Santé', en: 'Health', icon: 'heart', color: '#C2695A' }
-  };
-  var SECTOR_ORDER = ['agriculture', 'commerce', 'fintech', 'services', 'industrie', 'tech', 'energie', 'sante'];
+  var SECTORS = U.SECTORS, SECTOR_ORDER = U.SECTOR_ORDER;
 
   function co(id, name, sector, city, since, staff, legal, score, trend, revenue, growth, fr, en) {
     return { id: id, name: name, sector: sector, city: city, since: since, staff: staff, legal: legal, score: score, trend: trend,
@@ -109,7 +51,7 @@
   var BY_ID = {};
   COMPANIES.forEach(function (c) { BY_ID[c.id] = c; });
 
-  var SECTOR_GROWTH = { agriculture: 11, commerce: 7, fintech: 26, services: 5, industrie: 2, tech: 19, energie: 29, sante: 9 };
+  var SECTOR_GROWTH = U.SECTOR_GROWTH;
 
   var REG_TYPES = [
     ['Immatriculation au RCCM', 'Trade register entry'], ['Contrat fournisseur signé', 'Supplier contract signed'],
@@ -239,18 +181,6 @@
     return LAST12.map(function (m, i) { return i === 11 ? valueNow : (invested + (valueNow - invested) * i / 11) * (0.985 + r() * 0.03); });
   })();
 
-  // Niveaux du KAME Score : couleur vive pour les graphiques, pastille lisible (classe lv-a … lv-e) pour le texte
-  function level(score) {
-    if (score >= 80) return { l: 'A', c: '#0E7C75' };
-    if (score >= 70) return { l: 'B', c: '#159E96' };
-    if (score >= 60) return { l: 'C', c: '#E0A030' };
-    if (score >= 50) return { l: 'D', c: '#B8734F' };
-    return { l: 'E', c: '#B5452F' };
-  }
-  function lvChip(score, label) {
-    var lv = level(score);
-    return '<span class="lv lv-' + lv.l.toLowerCase() + (label ? ' wide' : '') + '">' + (label ? label + lv.l : lv.l) + '</span>';
-  }
   function notifications() {
     var o = BY_ID['okoume-data'], iv = BY_ID['ivindo-solaire'], mc = BY_ID['mitzic-cacao'];
     return state.notifs.concat([
@@ -272,10 +202,14 @@
     state.unread = (state.unread || 0) + 1;
     updateBadges();
   }
-  // Pastilles : notifications non lues (cloche) et demandes en cours (menu de gauche)
+  // Pastilles : notifications non lues (cloche, via kame-ui.js) et demandes en cours (menu de gauche)
+  var notifier = {
+    list: function () { return notifications(); },
+    unread: function () { return state.unread || 0; },
+    markRead: function () { state.unread = 0; }
+  };
   function updateBadges() {
-    var cnt = document.querySelector('[data-notif-count]');
-    if (cnt) { cnt.textContent = String(state.unread || 0); cnt.hidden = !state.unread; }
+    if (active) U.updateBell();
     var pending = state.requests.filter(function (r) { return r.status !== 'verifiee' && r.status !== 'refusee'; }).length;
     var rc = shell.querySelector('[data-req-count]');
     if (rc) { rc.textContent = String(pending); rc.hidden = !pending; }
@@ -285,117 +219,10 @@
   function scoreBadge(c, big) {
     return '<span class="inv-score' + (big ? ' big' : '') + '"><strong>' + c.score + '</strong>/100 ' + lvChip(c.score) + '</span>';
   }
-  function trendTag(n, unit) {
-    var cls = n > 0 ? 'up' : (n < 0 ? 'down' : 'flat');
-    var sign = n > 0 ? '+' : '';
-    var txt = n === 0 ? t('Stable', 'Steady') : (unit === '%' ? pct(n, true) : sign + n + ' pts');
-    return '<span class="inv-trend ' + cls + '">' + (n !== 0 ? ic(n > 0 ? 'trend' : 'trenddown', 15, 2.2) : '') + txt + '</span>';
-  }
-  function hexIcon(name, color) {
-    return '<span class="inv-hex" style="--hx:' + (color || '#159E96') + '">' + ic(name, 20, 1.9) + '</span>';
-  }
-  function sectorName(k) { var s = SECTORS[k]; return t(s.fr, s.en); }
   function verified() { return '<span class="inv-verified" title="' + esc(L('Entreprise vérifiée par KAME ID', 'Company verified by KAME ID')) + '">' + ic('shield', 15, 2) + t('Vérifiée', 'Verified') + '</span>'; }
-  function card(title, body, action, cls) {
-    return '<article class="inv-card' + (cls ? ' ' + cls : '') + '"><header class="inv-card-head"><h2>' + title + '</h2>' + (action || '') + '</header>' + body + '</article>';
-  }
-  function seeAll(href) { return '<a class="inv-more" href="' + href + '">' + t('Voir tout', 'See all') + ' ' + ic('right', 16, 2) + '</a>'; }
   function disclaimer() {
     return '<p class="inv-disclaimer">' + ic('info', 16, 2) + t('Indicateurs fournis à titre d\'information, ne constituent pas un conseil en investissement. Entreprises et chiffres fictifs (démonstration).',
       'Indicators provided for information only; they are not investment advice. Fictitious companies and figures (demo).') + '</p>';
-  }
-  function heading(fr, en, sub) {
-    return '<div class="inv-view-head"><h1 class="inv-h1" tabindex="-1">' + t(fr, en) + '</h1>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>';
-  }
-
-  // ------------------------------------------------------------ graphiques (SVG)
-  function linePath(values, w, h, pad, min, max) {
-    var step = (w - pad * 2) / (values.length - 1);
-    return values.map(function (v, i) {
-      var x = pad + i * step;
-      var y = h - pad - (v - min) / (max - min || 1) * (h - pad * 2);
-      return [x, y];
-    });
-  }
-  // Courbe sur 12 mois : le dessin s'étire à la largeur de la carte avec une hauteur fixe ;
-  // traits d'épaisseur constante, points en HTML pour rester bien ronds
-  function lineChart(series, opts) {
-    opts = opts || {};
-    var W = 600, H = 200, P = 10;
-    var all = [];
-    series.forEach(function (s) { all = all.concat(s.values); });
-    var min = Math.min.apply(null, all), max = Math.max.apply(null, all);
-    var span = max - min || 1;
-    min = Math.max(0, min - span * 0.25); max = max + span * 0.12;
-    var NS = ' vector-effect="non-scaling-stroke"';
-    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="' + esc(opts.label || '') + '">';
-    for (var gi = 0; gi <= 2; gi++) {
-      var gy = P + (H - P * 2) * gi / 2;
-      svg += '<line x1="0" x2="' + W + '" y1="' + gy + '" y2="' + gy + '" class="grid"' + NS + '/>';
-    }
-    var dots = '';
-    series.forEach(function (s) {
-      var pts = linePath(s.values, W, H, P, min, max);
-      var d = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
-      if (s.fill) {
-        svg += '<path d="' + d + ' L' + pts[pts.length - 1][0].toFixed(1) + ' ' + (H - P) + ' L' + pts[0][0].toFixed(1) + ' ' + (H - P) + ' Z" fill="' + s.color + '" fill-opacity=".14"/>';
-      }
-      svg += '<path d="' + d + '" fill="none" stroke="' + s.color + '" stroke-width="' + (s.dash ? 2 : 3) + '"' + (s.dash ? ' stroke-dasharray="6 6"' : '') +
-        ' stroke-linejoin="round" stroke-linecap="round"' + NS + '/>';
-      if (!s.dash && opts.dots !== false) {
-        pts.forEach(function (p, i) {
-          dots += '<span class="chart-dot' + (i === pts.length - 1 ? ' last' : '') + '" style="left:' + (p[0] / W * 100).toFixed(2) + '%;top:' + (p[1] / H * 100).toFixed(2) +
-            '%;--dc:' + s.color + '"></span>';
-        });
-      }
-    });
-    svg += '</svg>' + dots;
-    // Graduations placées exactement sur les lignes et les points du dessin
-    var fmt = opts.fmt || function (v) { return millions(v); };
-    var yPos = [P / H * 100, 50, (H - P) / H * 100];
-    var y = '<div class="chart-y" aria-hidden="true">' + [max, (max + min) / 2, min].map(function (v, i) {
-      return '<span style="top:' + yPos[i].toFixed(2) + '%">' + esc(fmt(v)) + '</span>';
-    }).join('') + '</div>';
-    var step = (W - P * 2) / 11;
-    var x = '<div class="chart-x" aria-hidden="true">' + LAST12.map(function (m, i) {
-      return '<span style="left:' + ((P + i * step) / W * 100).toFixed(2) + '%">' + t(m.fr, m.en) + '</span>';
-    }).join('') + '</div>';
-    return '<div class="chart" style="--ch:' + (opts.h || 200) + 'px">' + y + '<div class="chart-svg">' + svg + '</div>' + x + '</div>';
-  }
-  function spark(values, color) {
-    var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
-    var pts = linePath(values, 100, 32, 3, min, max);
-    var d = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
-    return '<svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true"><path d="' + d + '" fill="none" stroke="' + (color || '#159E96') +
-      '" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg>';
-  }
-  function donut(parts, centerHtml, label) {
-    var total = parts.reduce(function (s, p) { return s + p.v; }, 0);
-    var C = 2 * Math.PI * 15.9155, off = 0;
-    var rings = parts.map(function (p) {
-      var len = p.v / total * C;
-      var seg = '<circle cx="21" cy="21" r="15.9155" fill="none" stroke="' + p.c + '" stroke-width="5.5" stroke-dasharray="' + (len - 0.6).toFixed(2) + ' ' + (C - len + 0.6).toFixed(2) +
-        '" stroke-dashoffset="' + (-off + C / 4).toFixed(2) + '"/>';
-      off += len;
-      return seg;
-    }).join('');
-    return '<div class="donut"><svg viewBox="0 0 42 42" role="img" aria-label="' + esc(label) + '"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="#EEF5F5" stroke-width="5.5"/>' +
-      rings + '</svg><div class="donut-center">' + centerHtml + '</div></div>';
-  }
-  function gauge(c) {
-    var lv = level(c.score);
-    var a = Math.PI * (1 - c.score / 100);
-    var x = 100 + 80 * Math.cos(a), y = 100 - 80 * Math.sin(a);
-    return '<div class="gauge"><svg viewBox="0 0 200 112" role="img" aria-label="' + esc(L('KAME Score : ', 'KAME Score: ') + c.score + '/100, ' + L('niveau ', 'level ') + lv.l) + '">' +
-      '<path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="#E6F0F0" stroke-width="16" stroke-linecap="round"/>' +
-      '<path d="M20 100 A80 80 0 0 1 ' + x.toFixed(1) + ' ' + y.toFixed(1) + '" fill="none" stroke="' + lv.c + '" stroke-width="16" stroke-linecap="round"/>' +
-      '</svg><div class="gauge-val" aria-hidden="true"><p class="g-num"><strong>' + c.score + '</strong>/100</p>' + lvChip(c.score, L('Niveau ', 'Level ')) + '</div></div>';
-  }
-  function bars(items) {
-    return '<ul class="inv-bars">' + items.map(function (it) {
-      return '<li><span class="b-label">' + it.label + '</span><span class="b-track"><span class="b-fill" style="width:' + clamp(it.pct, 2, 100) + '%;--bc:' + (it.color || '#159E96') +
-        '"></span></span><span class="b-val">' + it.value + '</span></li>';
-    }).join('') + '</ul>';
   }
 
   // ------------------------------------------------------------ vues
@@ -478,14 +305,6 @@
       '<a class="btn btn-light btn-sm" href="index.html#contact">' + t('Poser une question', 'Ask a question') + ' ' + ic('right', 16, 2) + '</a></article>' +
       '</div>' + disclaimer();
     return html;
-  }
-  function kpi(icon, color, label, value, delta, extra) {
-    return '<article class="inv-kpi"><div class="kpi-top">' + hexIcon(icon, color) + '<p class="kpi-label">' + label + '</p></div>' +
-      '<p class="kpi-value">' + value + '</p>' + (delta || extra ? '<div class="kpi-foot"><p class="kpi-delta">' + (delta || '') + '</p>' +
-      (extra ? '<div class="kpi-spark">' + extra + '</div>' : '') + '</div>' : '') + '</article>';
-  }
-  function notifItem(n) {
-    return '<li><a href="' + n.go + '">' + hexIcon(n.icon, '#159E96') + '<span><span class="n-text">' + t(n.fr, n.en) + '</span><span class="inv-meta">' + t(n.when[0], n.when[1]) + '</span></span></a></li>';
   }
 
   function viewAnnuaire() {
@@ -777,15 +596,30 @@
   function viewProfil() {
     var sp = space();
     var ids = sp.ids || {};
+    var LB = { investisseur: ['Investisseur', 'Investor'], entreprise: ['Entreprise', 'Business'], commercant: ['Commerçant', 'Merchant'], partenaire: ['Partenaire', 'Partner'] };
     var roles = (sp.roles || []).map(function (r) {
-      var lb = { investisseur: ['Investisseur', 'Investor'], entreprise: ['Entreprise', 'Business'], commercant: ['Commerçant', 'Merchant'], partenaire: ['Partenaire', 'Partner'] }[r];
+      var lb = LB[r];
       return '<span class="inv-tag">' + t(lb[0], lb[1]) + ' · <strong>' + esc(ids[r] || '') + '</strong></span>';
     }).join('');
+    // Espaces demandés en plus (entreprise, commerçant…), en attente de validation par l'équipe KAME
+    var pending = (sp.pending || []).map(function (r) {
+      var lb = LB[r.role] || [r.role, r.role];
+      var d = r.date ? new Date(r.date) : null;
+      var when = d && !isNaN(d) ? U.fmtDate(d) : null;
+      return '<li class="doc-pending">' + hexIcon('clock', '#C98A1E') + '<span><strong>' + t('Espace ' + lb[0].toLowerCase(), lb[1] + ' space') + (r.structure ? ' · ' + esc(r.structure) : '') +
+        '</strong><span class="inv-meta">' + t('En attente de validation par l\'équipe KAME', 'Awaiting approval by the KAME team') + (when ? ' · ' + t('demandé le ' + when.fr, 'requested on ' + when.en) : '') +
+        '</span></span><span class="inv-chip warn">' + t('En attente', 'Pending') + '</span></li>';
+    }).join('');
+    var spacesCard = card(t('Mes espaces', 'My spaces'), '<p>' + t('Avec le même compte et le même e-mail, ajoutez un espace entreprise, commerçant ou partenaire. L\'équipe KAME vérifie chaque demande avant d\'ouvrir l\'espace.',
+        'With the same account and email, add a business, merchant or partner space. The KAME team checks each request before opening the space.') + '</p>' +
+      (pending ? '<ul class="inv-docs">' + pending + '</ul>' : '') +
+      '<div><button type="button" class="btn btn-outline btn-sm" data-add-space>' + ic('plus', 16, 2.2) + t('Ajouter un espace', 'Add a space') + '</button></div>');
     return heading('Mon profil', 'My profile') + '<div class="inv-grid g-two">' +
       card(t('Mon compte', 'My account'), '<div class="inv-me"><span class="mh-avatar big">' + esc((sp.firstName || 'K').charAt(0).toUpperCase()) + '</span><div><strong>' + esc(sp.fullName || sp.firstName || '') +
         '</strong><span class="inv-meta">' + esc(sp.email || '') + '</span><p class="co-badges"><span class="inv-chip ok">' + t('Membre validé', 'Approved member') + '</span>' + roles + '</p></div></div>' +
         (sp.structure || sp.ville ? '<dl class="inv-facts wide">' + (sp.structure ? '<div><dt>' + t('Structure', 'Organisation') + '</dt><dd>' + esc(sp.structure) + '</dd></div>' : '') +
           (sp.ville ? '<div><dt>' + t('Ville', 'City') + '</dt><dd>' + esc(sp.ville) + '</dd></div>' : '') + '</dl>' : '')) +
+      spacesCard +
       card('KAME ID', '<p class="inv-kid">' + hexIcon('id', '#145B63') + '<span><strong>' + t('Vérification d\'identité', 'Identity verification') + '</strong><span class="inv-meta">' +
         t('Bientôt disponible : pièce d\'identité et selfie, pour obtenir votre badge « Identité vérifiée » et accéder aux données détaillées.',
           'Coming soon: ID document and selfie, to get your "Verified identity" badge and access detailed data.') + '</span></span></p>' +
@@ -795,7 +629,7 @@
         '<p class="inv-foot-note">' + t('Bientôt : choisissez vos secteurs et vos montants pour recevoir les opportunités qui vous correspondent.', 'Coming soon: choose your sectors and amounts to receive matching opportunities.') + '</p>') +
       card(t('Sécurité du compte', 'Account security'), '<ul class="inv-docs"><li>' + hexIcon('lock', '#145B63') + '<span><strong>' + t('Mot de passe', 'Password') + '</strong><span class="inv-meta">' +
         t('Pour le changer, utilisez « Mot de passe oublié » sur la page de connexion.', 'To change it, use "Forgot password" on the login page.') + '</span></span></li><li>' + hexIcon('shield', '#145B63') + '<span><strong>' +
-        t('Double authentification', 'Two-step verification') + '</strong><span class="inv-meta">' + t('Bientôt disponible', 'Coming soon') + '</span></span></li></ul>') + '</div>';
+        t('Double authentification', 'Two-step verification') + '</strong><span class="inv-meta">' + t('Bientôt disponible', 'Coming soon') + '</span></span></li></ul>', '', 'wide') + '</div>';
   }
 
   // ------------------------------------------------------------ navigation
@@ -861,50 +695,6 @@
   }
 
   // ------------------------------------------------------------ actions dans les vues
-  var toastEl = document.createElement('div');
-  toastEl.className = 'inv-toast';
-  toastEl.setAttribute('role', 'status');
-  toastEl.setAttribute('aria-live', 'polite');
-  document.body.appendChild(toastEl);
-  var toastTimer;
-  function toast(html) {
-    toastEl.innerHTML = html;
-    toastEl.classList.add('on');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toastEl.classList.remove('on'); }, 4200);
-  }
-
-  var modal = document.createElement('div');
-  modal.className = 'inv-modal';
-  modal.hidden = true;
-  modal.innerHTML = '<div class="inv-dialog" role="dialog" aria-modal="true" aria-labelledby="inv-modal-title"><h2 id="inv-modal-title"></h2><div class="inv-dialog-body"></div>' +
-    '<div class="inv-dialog-actions"><button type="button" class="btn btn-outline btn-sm" data-close>' + t('Annuler', 'Cancel') + '</button>' +
-    '<button type="button" class="btn btn-primary btn-sm" data-confirm>' + t('Envoyer', 'Send') + '</button></div></div>';
-  document.body.appendChild(modal);
-  var modalCfg = null, lastFocus = null;
-  // cfg : title, body, confirm (texte du bouton), check() → message d'erreur ou rien, done() après fermeture
-  function openModal(cfg) {
-    modalCfg = cfg;
-    toastEl.classList.remove('on');   // le message ne doit pas cacher les boutons de la fenêtre
-    lastFocus = document.activeElement;
-    modal.querySelector('h2').innerHTML = cfg.title;
-    modal.querySelector('.inv-dialog-body').innerHTML = cfg.body + '<p class="inv-form-error" role="alert" hidden></p>';
-    modal.querySelector('[data-confirm]').innerHTML = cfg.confirm || t('Envoyer', 'Send');
-    modal.hidden = false;
-    var first = modal.querySelector('input:not([disabled]), textarea');
-    if (first) first.focus();
-  }
-  function closeModal() { modal.hidden = true; modalCfg = null; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
-  modal.addEventListener('click', function (e) {
-    if (e.target === modal || e.target.closest('[data-close]')) { closeModal(); return; }
-    if (!e.target.closest('[data-confirm]') || !modalCfg) return;
-    var cfg = modalCfg;
-    var err = cfg.check ? cfg.check() : '';
-    var box = modal.querySelector('.inv-form-error');
-    if (err) { box.innerHTML = err; box.hidden = false; return; }
-    closeModal();
-    cfg.done();
-  });
   // « Autre » : le champ pour préciser n'apparaît que si on le choisit
   modal.addEventListener('change', function (e) {
     if (e.target.name !== 'req-item') return;
@@ -925,8 +715,8 @@
       done: function () {
         state.interest[id] = true;
         rerender();
-        toast(ic('ok', 18, 2.4) + '<span>' + t('Démo : votre intérêt pour ' + c.name + ' est noté. En version réelle, KAME vous mettra en relation.',
-          'Demo: your interest in ' + c.name + ' is noted. In the live version, KAME will put you in touch.') + '</span>');
+        toast(t('Démo : votre intérêt pour ' + c.name + ' est noté. En version réelle, KAME vous mettra en relation.',
+          'Demo: your interest in ' + c.name + ' is noted. In the live version, KAME will put you in touch.'));
       }
     });
   }
@@ -974,8 +764,8 @@
     state.requests.unshift(r);
     updateBadges();
     rerender();
-    toast(ic('ok', 18, 2.4) + '<span>' + t('Demande envoyée. KAME la vérifie avant de la transmettre à ' + c.name + '. Suivez-la dans « Mes demandes ».',
-      'Request sent. KAME checks it before passing it on to ' + c.name + '. Track it in "My requests".') + '</span>');
+    toast(t('Demande envoyée. KAME la vérifie avant de la transmettre à ' + c.name + '. Suivez-la dans « Mes demandes ».',
+      'Request sent. KAME checks it before passing it on to ' + c.name + '. Track it in "My requests".'));
     setTimeout(function () {
       if (r.status !== 'envoyee') return;
       r.status = 'transmise';
@@ -996,8 +786,8 @@
       var id = b.getAttribute('data-follow'), i = state.followed.indexOf(id);
       if (i >= 0) state.followed.splice(i, 1); else state.followed.push(id);
       rerender();
-      toast(ic('bookmark', 18, 2.2) + '<span>' + (i >= 0 ? t('Vous ne suivez plus ' + BY_ID[id].name + '.', 'You no longer follow ' + BY_ID[id].name + '.') :
-        t('Vous suivez maintenant ' + BY_ID[id].name + '.', 'You now follow ' + BY_ID[id].name + '.')) + '</span>');
+      toast((i >= 0 ? t('Vous ne suivez plus ' + BY_ID[id].name + '.', 'You no longer follow ' + BY_ID[id].name + '.') :
+        t('Vous suivez maintenant ' + BY_ID[id].name + '.', 'You now follow ' + BY_ID[id].name + '.')), 'bookmark');
       return;
     }
     if (b.hasAttribute('data-interest')) { if (!state.interest[b.getAttribute('data-interest')]) openInterest(b.getAttribute('data-interest')); return; }
@@ -1006,15 +796,15 @@
     if (b.hasAttribute('data-request')) {
       state.requested[b.getAttribute('data-request')] = true;
       rerender();
-      toast(ic('ok', 18, 2.4) + '<span>' + t('Démo : demande d\'accès notée. En version réelle, l\'entreprise décide de l\'accorder.',
-        'Demo: access request noted. In the live version, the company decides whether to grant it.') + '</span>');
+      toast(t('Démo : demande d\'accès notée. En version réelle, l\'entreprise décide de l\'accorder.',
+        'Demo: access request noted. In the live version, the company decides whether to grant it.'));
       return;
     }
     if (b.hasAttribute('data-open-notifs')) {
       // Le clic ne doit pas atteindre le document, qui refermerait aussitôt le panneau
       e.stopPropagation();
       window.scrollTo(0, 0);
-      openPanel('notifs');
+      U.openPanel('notifs');
     }
   });
   shell.addEventListener('change', function (e) {
@@ -1048,13 +838,8 @@
     var out = shell.querySelector('.inv-verify-result');
     var file = input.files && input.files[0];
     if (!file || !out) return;
-    if (!(window.crypto && crypto.subtle)) {
-      out.innerHTML = '<p class="inv-chip warn">' + t('Votre navigateur ne permet pas ce calcul.', 'Your browser cannot compute this.') + '</p>';
-      return;
-    }
     out.innerHTML = '<p class="inv-meta">' + t('Calcul de l\'empreinte…', 'Computing the fingerprint…') + '</p>';
-    file.arrayBuffer().then(function (buf) { return crypto.subtle.digest('SHA-256', buf); }).then(function (h) {
-      var hx = Array.prototype.map.call(new Uint8Array(h), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+    U.fileHash(file).then(function (hx) {
       var match = null;
       COMPANIES.forEach(function (c) { c.events.forEach(function (e) { if (e.hash === hx) match = { c: c, e: e }; }); });
       out.innerHTML = match ?
@@ -1063,62 +848,13 @@
         '<div class="inv-verify ko">' + ic('info', 22, 2) + '<div><strong>' + t('Document non reconnu', 'Document not recognised') + '</strong><span>' +
           t('Cette empreinte ne figure pas dans le registre : le document n\'y a jamais été enregistré, ou il a été modifié.', 'This fingerprint is not in the registry: the document was never recorded, or it has been changed.') +
           '</span><code>' + hx + '</code></div></div>';
-    }).catch(function () {
-      out.innerHTML = '<p class="inv-chip warn">' + t('Impossible de lire ce fichier.', 'This file cannot be read.') + '</p>';
+    }).catch(function (er) {
+      out.innerHTML = '<p class="inv-chip warn">' + (er && er.message === 'no-crypto' ? t('Votre navigateur ne permet pas ce calcul.', 'Your browser cannot compute this.') :
+        t('Impossible de lire ce fichier.', 'This file cannot be read.')) + '</p>';
     });
   }
 
-  // ------------------------------------------------------------ bandeau : recherche, notifications, menu du compte
-  var header = document.querySelector('.member-header');
-  var panels = {
-    notifs: { btn: header && header.querySelector('.mh-bell'), el: document.getElementById('mh-notifs') },
-    menu: { btn: header && header.querySelector('.mh-me'), el: document.getElementById('mh-menu') }
-  };
-  function closePanels(except) {
-    Object.keys(panels).forEach(function (k) {
-      var p = panels[k];
-      if (!p.el || k === except) return;
-      p.el.hidden = true;
-      if (p.btn) p.btn.setAttribute('aria-expanded', 'false');
-    });
-  }
-  function openPanel(k, toggle) {
-    var p = panels[k];
-    if (!p || !p.el) return;
-    var open = toggle ? p.el.hidden : true;
-    closePanels(k);
-    if (k === 'notifs' && open) {
-      p.el.innerHTML = '<p class="mh-panel-title">' + t('Notifications', 'Notifications') + '</p><ul class="inv-notifs">' + notifications().map(notifItem).join('') + '</ul>';
-      state.unread = 0;
-      updateBadges();
-    }
-    p.el.hidden = !open;
-    if (p.btn) p.btn.setAttribute('aria-expanded', String(open));
-    if (open && toggle === undefined) { var first = p.el.querySelector('a, button'); if (first) first.focus(); }
-  }
-  if (panels.menu.btn) panels.menu.btn.addEventListener('click', function () { openPanel('menu', true); });
-  if (panels.notifs.btn) panels.notifs.btn.addEventListener('click', function () { openPanel('notifs', true); });
-  document.addEventListener('click', function (e) {
-    if (e.target.closest('.mh-pop')) {
-      if (e.target.closest('.mh-panel a, .mh-panel [data-space-role]')) closePanels();
-      return;
-    }
-    closePanels();
-  });
-  document.addEventListener('keydown', function (e) {
-    // Tabulation gardée dans la fenêtre « Manifester mon intérêt » tant qu'elle est ouverte
-    if (e.key === 'Tab' && !modal.hidden) {
-      var f = Array.prototype.filter.call(modal.querySelectorAll('input, textarea, button'), function (el) { return !el.disabled && !el.hidden; });
-      var first = f[0], last = f[f.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-      return;
-    }
-    if (e.key !== 'Escape') return;
-    if (!modal.hidden) { closeModal(); return; }
-    var openK = Object.keys(panels).filter(function (k) { return panels[k].el && !panels[k].el.hidden; })[0];
-    if (openK) { closePanels(); if (panels[openK].btn) panels[openK].btn.focus(); }
-  });
+  // ------------------------------------------------------------ bandeau : recherche (menu et notifications : kame-ui.js)
 
   var searches = [document.getElementById('mh-q'), document.getElementById('inv-q2')].filter(Boolean);
   function syncSearch(src) {
@@ -1145,12 +881,15 @@
     if (active || !shell || shell.hidden) return;
     active = true;
     if (state.unread === null) state.unread = notifications().length;
+    U.setNotifier(notifier);
     updateBadges();
     route(false);
   }
   if (shell) {
     window.addEventListener('hashchange', function () { if (active && !shell.hidden) route(true); });
-    document.addEventListener('kame:investor', function () { active = false; start(); });
+    document.addEventListener('kame:investor', function () { active = false; currentView = ''; start(); });
+    // Demande d'un nouvel espace envoyée : la page « Mon profil » affiche la demande en attente
+    document.addEventListener('kame:spaces', function () { if (currentView === 'profil') rerender(); });
     if (window.KAME_SPACE && root.classList.contains('inv-on')) start();
     // Langue changée : les listes déroulantes et les textes calculés sont redessinés
     new MutationObserver(function () { rerender(); }).observe(root, { attributes: true, attributeFilter: ['lang'] });

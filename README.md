@@ -19,6 +19,23 @@ En ligne : https://kamegroupe.com
 - `dist/assets/js/kame-icons.js` — icônes, généré par `build.py` (ne pas modifier à la main).
 - `dist/assets/demo/attestation-kame-demo.txt` — document de démonstration reconnu par « Vérifier un document ».
 
+## Espace entreprise et espace commerçant (démonstration)
+- `dist/assets/js/business.js` — un outil = une page : accueil, Mon entreprise, KAME ID, KAME Data, KAME Score, KAME Check,
+  KAME Registre, KAME Garde, KAME Agro (si activité agricole), Mes investisseurs, Demandes reçues, Levées de fonds, Documents.
+  KAME ID, KAME Check et KAME Registre ont deux onglets : « Pour mon entreprise » et « Pour mes clients ».
+  Le commerçant a un menu simplifié (ventes, reçus clients, vérifier un client, financement).
+- Chiffres, clients et investisseurs **fictifs**, calculés dans le navigateur ; un fichier choisi reste sur l'appareil
+  (seule son empreinte SHA-256 est calculée, pour le registre et les reçus certifiés).
+- `dist/assets/js/kame-ui.js` — outils communs aux espaces investisseur et entreprise (textes, graphiques, fenêtre,
+  messages, menu du compte et notifications).
+
+## Plusieurs espaces avec un seul compte
+- Menu du compte → « Ajouter un espace » : la demande est enregistrée dans le compte (`user_metadata.espaces_demandes`)
+  et envoie une alerte e-mail via le formulaire Netlify `nouvel-espace`. Elle ne donne **aucun** accès toute seule.
+- L'équipe KAME ouvre l'espace en ajoutant le rôle dans Netlify : Identity → la personne → Edit settings → Roles
+  (`investisseur`, `entreprise`, `commercant`, `partenaire`). Au rechargement, l'espace apparaît dans « Mes espaces ».
+- Le dernier espace utilisé est rouvert à la connexion suivante.
+
 ## Référencement (Google)
 - Titres et descriptions des pages, en français et en anglais : dictionnaire `SEO` dans `build.py`.
 - Pages publiques : français à la racine (kamegroupe.com/investisseur), anglais dans /en/ (kamegroupe.com/en/investisseur),
