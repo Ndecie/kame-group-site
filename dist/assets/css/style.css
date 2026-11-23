@@ -1640,6 +1640,12 @@ html.com-discreet .com-shell .c-amt { filter: blur(7px); -webkit-user-select: no
 .cd-amt { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
 .cd-amt strong { font-size: 20px; color: var(--petrol); white-space: nowrap; }
 .cd-meta { font-size: 14px; color: var(--muted); }
+.cd-sub { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+.cd-phone { white-space: nowrap; }
+@container (max-width: 520px) {
+  .com-debt .req-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+  .com-debt .req-actions .btn { justify-content: center; }
+}
 .com-late { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; color: #A3402A; }
 .com-late svg { flex-shrink: 0; }
 .cd-chips { display: flex; flex-wrap: wrap; gap: 6px; }

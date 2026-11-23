@@ -54,6 +54,9 @@
       'Demo: fictitious sales, customers and amounts. KAME never touches your money: it records, calculates and certifies, with your consent.') + '</p>';
   }
   function today0() { return new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate()); }
+  // Date sans l'année quand c'est l'année en cours : « 8 novembre »
+  function shortFr(dt) { return new Date(dt.ts).getFullYear() === NOW.getFullYear() ? dt.fr.replace(/ \d{4}$/, '') : dt.fr; }
+  function shortEn(dt) { return new Date(dt.ts).getFullYear() === NOW.getFullYear() ? dt.en.replace(/, \d{4}$/, '') : dt.en; }
   // Jours de retard (0 si l'échéance n'est pas passée) et jours restants avant une échéance
   function lateDays(due) { return Math.max(0, Math.round((today0().getTime() - due.ts) / 86400000)); }
   function leftDays(due) { return Math.round((due.ts - today0().getTime()) / 86400000); }
@@ -796,22 +799,22 @@
   function debtCard(c) {
     var lft = leftC(c), late = lateDays(c.due), dl = leftDays(c.due);
     var meta = late > 0 ? '<span class="com-late">' + ic('alert', 15, 2.2) + th('En retard de ' + daysFr(late), daysEn(late) + ' late') + '</span>'
-      : th('À rembourser ' + whenFr(dl) + ' (' + esc(c.due.fr) + ')', 'Due ' + whenEn(dl) + ' (' + esc(c.due.en) + ')');
+      : th('À rembourser ' + whenFr(dl) + ' (' + esc(shortFr(c.due)) + ')', 'Due ' + whenEn(dl) + ' (' + esc(shortEn(c.due)) + ')');
     var actions = '<button type="button" class="btn btn-primary btn-sm" data-cpay="' + c.id + '">' + ic('cash', 16, 2) + t('Il a payé', 'Paid') + '</button>' +
       '<button type="button" class="btn btn-outline btn-sm" data-remind="' + c.id + '">' + ic('chat', 16, 2) + t('Rappel WhatsApp', 'WhatsApp reminder') + '</button>' +
       (c.confirmed === 'no' ? '<button type="button" class="btn btn-outline btn-sm" data-confirm-debt="' + c.id + '">' + ic('registre', 16, 2) + t('Faire confirmer', 'Get it confirmed') + '</button>' : '') +
       (!c.verified && lft >= 15000 ? '<button type="button" class="btn btn-outline btn-sm" data-verify-client="' + c.id + '">' + ic('id', 16, 2) + t('Vérifier son identité', 'Verify identity') + '</button>' : '');
     return '<article class="com-debt' + (late > 0 ? ' is-late' : '') + '"><div class="cd-top">' + hexIcon('user', late > 0 ? '#B5452F' : '#145B63') + '<div class="cd-who"><h3>' + esc(c.name) + '</h3>' +
-      '<p class="inv-meta">' + (c.phone ? esc(c.phone) + ' · ' : '') + t(c.what[0], c.what[1]) + '</p></div><div class="cd-amt"><strong>' + amt(lft) + '</strong>' +
+      '<p class="inv-meta cd-sub">' + (c.phone ? '<span class="cd-phone">' + esc(c.phone) + '</span>' : '') + '<span>' + t(c.what[0], c.what[1]) + '</span></p></div><div class="cd-amt"><strong>' + amt(lft) + '</strong>' +
       (c.paid ? '<span class="inv-meta">' + th('sur ' + amt(c.total), 'of ' + amt(c.total)) + '</span>' : '') + '</div></div>' + progress(c.total ? c.paid / c.total * 100 : 0, '#0E7C75') +
-      '<p class="cd-meta">' + meta + ' · ' + th('depuis ' + esc(c.since.fr), 'since ' + esc(c.since.en)) + '</p><p class="cd-chips">' + confChip(c) +
+      '<p class="cd-meta">' + meta + ' · ' + th('depuis le ' + esc(shortFr(c.since)), 'since ' + esc(shortEn(c.since))) + '</p><p class="cd-chips">' + confChip(c) +
       (c.verified === true ? chip('ok', 'id', 'Identité vérifiée', 'Identity verified') : (c.verified === 'sent' ? chip('', 'id', 'Vérification en cours', 'Verification in progress') : '')) +
       (lft > 30000 ? chip('warn', 'alert', 'Au-dessus du plafond conseillé', 'Above the advised limit') : '') + '</p><div class="req-actions">' + actions + '</div></article>';
   }
   function supplierCard(f) {
     var lft = leftC(f), dl = leftDays(f.due);
     var meta = dl < 0 ? '<span class="com-late">' + ic('alert', 15, 2.2) + th('En retard de ' + daysFr(-dl), daysEn(-dl) + ' late') + '</span>'
-      : th('À payer ' + whenFr(dl) + ' (' + esc(f.due.fr) + ')', 'Due ' + whenEn(dl) + ' (' + esc(f.due.en) + ')');
+      : th('À payer ' + whenFr(dl) + ' (' + esc(shortFr(f.due)) + ')', 'Due ' + whenEn(dl) + ' (' + esc(shortEn(f.due)) + ')');
     var last = f.last ? '<p class="cd-chips">' + (f.last.confirmed === true ? chip('ok', 'registre', 'Paiement confirmé par le fournisseur', 'Payment confirmed by the supplier')
       : (f.last.confirmed === 'sent' ? chip('', 'send', 'Confirmation demandée', 'Confirmation requested') : chip('warn', 'info', 'Paiement pas encore confirmé', 'Payment not confirmed yet'))) + '</p>' : '';
     return '<article class="com-debt' + (dl < 0 && lft ? ' is-late' : '') + '"><div class="cd-top">' + hexIcon('truck', '#7A5236') + '<div class="cd-who"><h3>' + esc(f.name) + '</h3><p class="inv-meta">' +
