@@ -222,6 +222,50 @@
       pt.style.setProperty('--py', (-r.top * 0.18).toFixed(1) + 'px');
     });
   }
+  /* ---------- Fin de page : le bandeau descend et s'emboîte dans le pied de page ; le miel scelle la jointure ---------- */
+  var sealHead = document.querySelector('.site-header');
+  var sealFoot = document.querySelector('.site-footer');
+  var footEdge = sealFoot && sealFoot.querySelector('.edge-up');
+  var seam = sealHead && sealHead.querySelector('.edge-seam');
+  var sealed = false, sealTimer = null;
+  // Une fois emboîtés : la jointure est remplie (aucun liseré clair) et la ligne de miel brille
+  function joinAndFlash(delay) {
+    clearTimeout(sealTimer);
+    sealTimer = setTimeout(function () {
+      document.documentElement.classList.add('is-joined');
+      if (!seam) return;
+      seam.classList.remove('is-flash');
+      void seam.getBoundingClientRect();   // relance l'animation à chaque fermeture
+      seam.classList.add('is-flash');
+    }, delay);
+  }
+  function updateSeal() {
+    if (!sealHead || !footEdge) return;
+    var doc = document.documentElement;
+    // Partie visible de la ligne dorée (le dessin fait 4 200 px de large)
+    if (seam) seam.style.setProperty('--seam-vis', Math.min(100, window.innerWidth / 42 + 2).toFixed(2));
+    var max = doc.scrollHeight - window.innerHeight;
+    var atEnd = max > 40 && window.scrollY >= max - 2;
+    // Espace entre les dents du bandeau et celles du pied de page (mesuré sans la descente en cours)
+    var gap = footEdge.getBoundingClientRect().top - (sealHead.getBoundingClientRect().bottom - 1);
+    var limit = (parseFloat(getComputedStyle(doc).getPropertyValue('--seal-gap')) || 72) + 40;
+    var drop = 0, now;
+    if (gap <= 0.5) now = true;                                      // le pied de page est arrivé sous le bandeau
+    else if (atEnd && gap <= limit) { now = true; drop = gap + 1; }   // fin de page : le bandeau descend jusqu'au pied de page
+    else now = false;
+    sealHead.style.setProperty('--seal-y', drop.toFixed(1) + 'px');
+    if (now !== sealed) {
+      sealed = now;
+      doc.classList.toggle('is-sealed', now);
+      if (now) joinAndFlash(drop ? 430 : 0);   // la ligne brille quand le bandeau est arrivé
+      else {
+        clearTimeout(sealTimer);
+        doc.classList.remove('is-joined');
+        if (seam) seam.classList.remove('is-flash');
+      }
+    }
+  }
+
   var ticking = false;
   function onScroll() {
     if (ticking) return;
@@ -229,11 +273,15 @@
     requestAnimationFrame(function () {
       ticking = false;
       if (!reduced) { updateHive(); updateHoney(); updateParallax(); }
+      updateSeal();
     });
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll);
+  // Une page qui change de hauteur (espace membre, contenus ajoutés) peut rouvrir ou refermer la jointure
+  if ('ResizeObserver' in window) new ResizeObserver(onScroll).observe(document.body);
   if (!reduced) { updateHive(); updateHoney(); updateParallax(); }
+  updateSeal();
 
   /* ---------- Apparitions douces ---------- */
   var revealEls = document.querySelectorAll('[data-reveal]');

@@ -1431,3 +1431,46 @@ textarea.inv-input { resize: vertical; line-height: 1.5; }
 @container invmain (max-width: 880px) { .biz-quick { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); } }
 @container invmain (max-width: 700px) { .biz-quick { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 640px) { html.biz-on .inv-section { padding-top: 28px; } }
+
+/* =====================================================================
+   Fin de page : le bandeau descend et s'emboîte dans le pied de page,
+   et une fine ligne de miel brille une seconde pour « sceller » la jointure.
+   En remontant, tout se rouvre. Le miel coule derrière le pied de page.
+   ===================================================================== */
+:root { --seal-gap: 72px; }
+@media (max-width: 640px) { :root { --seal-gap: 56px; } }
+.site-header .edge-down, .edge-seam { transform: translateY(var(--seal-y, 0px)); transition: transform .45s cubic-bezier(.6,0,.25,1); }
+.seal-band {
+  position: absolute; left: 0; top: calc(100% - 1px); width: 100%; height: var(--seal-y, 0px);
+  background: var(--petrol); pointer-events: none; transition: height .45s cubic-bezier(.6,0,.25,1);
+  height: calc(var(--seal-y, 0px) + 2px);
+}
+.edge-seam { position: absolute; left: 0; top: calc(100% - 1px); width: 100%; overflow: visible; pointer-events: none; opacity: 0; }
+.edge-seam path {
+  fill: none; stroke: var(--honey); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round;
+  stroke-dasharray: var(--seam-vis, 48) 200; stroke-dashoffset: var(--seam-vis, 48);
+}
+.edge-seam.is-flash { animation: seamGlow 1.3s ease-out forwards; }
+.edge-seam.is-flash path { animation: seamDraw .4s cubic-bezier(.25,.7,.3,1) forwards; }
+@keyframes seamDraw { to { stroke-dashoffset: 0; } }
+@keyframes seamGlow {
+  0% { opacity: 1; filter: drop-shadow(0 0 0 rgba(255,212,110,0)); }
+  30% { opacity: 1; filter: drop-shadow(0 0 6px rgba(255,212,110,.95)) brightness(1.15); }
+  70% { opacity: .9; filter: drop-shadow(0 0 2px rgba(255,212,110,.5)); }
+  100% { opacity: 0; filter: none; }
+}
+/* Une fois emboîtés, l'espace entre les dents est entièrement rempli : aucun liseré clair ne reste visible */
+.site-footer::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: calc(100% - 1px); height: 16px;
+  background: var(--petrol); opacity: 0; pointer-events: none;
+}
+html.is-joined .site-footer::before { opacity: 1; }
+/* Le pied de page passe devant le miel, et il est assez haut pour rejoindre le bandeau en fin de page
+   (son contenu reste en bas) */
+.site-footer {
+  z-index: 56; display: flex; flex-direction: column; justify-content: flex-end;
+  min-height: calc(100vh - var(--header-h) - 12px - var(--seal-gap));
+}
+/* Pied de page haut (grand écran) : le contenu se centre dans l'espace, la ligne des mentions reste tout en bas */
+.site-footer > .footer-inner { flex: 1 0 auto; width: 100%; }
+.site-footer .footer-grid { margin-top: auto; margin-bottom: auto; }

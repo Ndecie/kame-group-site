@@ -234,16 +234,18 @@ def icon(key, size=24, sw=1.75):
 
 
 # ---------------------------------------------------------------- bords en nid d'abeille
-def edge_svg(s, direction='down', W=4200, o=1.0):
+def edge_svg(s, direction='down', W=4200, o=1.0, phase=0.0):
+    # phase : décalage des dents ; le pied de page est décalé d'une demi-période (1,5 × s) pour s'emboîter dans le bandeau
     a = math.sqrt(3) / 2 * s
     P = 3 * s
     Hh = o + a + 1
     pts = []
+    k0 = -1 if phase else 0
     if direction == 'down':
         pts += [(0, 0), (0, o)]
-        k = 0
-        while s / 2 + k * P <= W:
-            x0 = s / 2 + k * P
+        k = k0
+        while phase + s / 2 + k * P <= W:
+            x0 = phase + s / 2 + k * P
             pts += [(x0, o), (x0 + s / 2, o + a), (x0 + 1.5 * s, o + a), (x0 + 2 * s, o)]
             k += 1
         pts += [(W, o), (W, 0)]
@@ -251,15 +253,35 @@ def edge_svg(s, direction='down', W=4200, o=1.0):
     else:
         base = Hh - o
         pts += [(0, Hh), (0, base)]
-        k = 0
-        while s / 2 + k * P <= W:
-            x0 = s / 2 + k * P
+        k = k0
+        while phase + s / 2 + k * P <= W:
+            x0 = phase + s / 2 + k * P
             pts += [(x0, base), (x0 + s / 2, base - a), (x0 + 1.5 * s, base - a), (x0 + 2 * s, base)]
             k += 1
         pts += [(W, base), (W, Hh)]
         cls = 'edge edge-up'
     d = 'M' + 'L'.join('%.2f %.2f' % p for p in pts) + 'Z'
     return '<svg class="%s" height="%.2f" aria-hidden="true" focusable="false"><path d="%s"/></svg>' % (cls, Hh, d)
+
+
+def seam_svg(s, W=4200, o=1.0):
+    a = math.sqrt(3) / 2 * s
+    P = 3 * s
+    pts = [(0, o)]
+    k = 0
+    while s / 2 + k * P <= W:
+        x0 = s / 2 + k * P
+        pts += [(x0, o), (x0 + s / 2, o + a), (x0 + 1.5 * s, o + a), (x0 + 2 * s, o)]
+        k += 1
+    pts.append((W, o))
+    d = 'M' + 'L'.join('%.2f %.2f' % p for p in pts)
+    return ('<svg class="edge-seam" height="%.2f" aria-hidden="true" focusable="false"><path d="%s" pathLength="100"/></svg>'
+            % (o + a + 1, d))
+
+
+def header_edge():
+    # Bas du bandeau : la bande qui descend en fin de page, les dents et la jointure dorée
+    return '<span class="seal-band" aria-hidden="true"></span>' + edge_svg(12, 'down') + seam_svg(12)
 
 
 def hc_shape():
@@ -612,7 +634,7 @@ def header(home, brand_href=None):
             % (brand(brand_href or h or '#accueil'), lang_switch(), bi_attr('aria-label', 'Navigation principale', 'Main navigation'),
                h, T('À propos', 'About'), h, T('Nos outils et services', 'Tools &amp; services'), h, h,
                T('Se connecter', 'Log in'), T('Mon espace', 'My space'), h, T('Devenir membre', 'Become a member'),
-               bi_attr('aria-label', 'Ouvrir le menu', 'Open the menu'), icon('menu', 24, 2), edge_svg(12, 'down')))
+               bi_attr('aria-label', 'Ouvrir le menu', 'Open the menu'), icon('menu', 24, 2), header_edge()))
 
 
 def member_header():
@@ -643,7 +665,7 @@ def member_header():
             % (brand('espace-membre.html'), T('Rechercher', 'Search'), icon('search', 20, 2),
                bi_attr('placeholder', 'Rechercher une entreprise, un secteur, une ville…', 'Search a company, a sector, a city…'),
                lang_switch(), bi_attr('aria-label', 'Notifications', 'Notifications'), icon('bell', 22, 1.9),
-               icon('chevron', 18, 2), menu, edge_svg(12, 'down')))
+               icon('chevron', 18, 2), menu, header_edge()))
 
 
 def drawer(home, brand_href=None):
@@ -706,7 +728,7 @@ def footer(home, brand_href=None):
             '<div class="footer-links"><p class="footer-title">%s</p>%s</div>'
             '<div class="footer-links"><p class="footer-title">Contact</p>%s</div></div>'
             '<div class="footer-bottom"><span>%s</span>%s</div></div></footer>'
-            % (edge_svg(26, 'up'), brand(brand_href or h or '#accueil'), T('Un avenir sûr et éclairé.', 'A secure and bright future.'),
+            % (edge_svg(12, 'up', phase=18), brand(brand_href or h or '#accueil'), T('Un avenir sûr et éclairé.', 'A secure and bright future.'),
                T('Groupe technologique et financier né au Gabon.', 'Technology and financial group born in Gabon.'),
                bi_attr('aria-label', 'Liens du pied de page', 'Footer links'), nav, T('Espace membre', 'Member area'), members, contact,
                T('© 2026 KAME GROUP. Tous droits réservés.', '© 2026 KAME GROUP. All rights reserved.'),

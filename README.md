@@ -36,6 +36,14 @@ En ligne : https://kamegroupe.com
   (`investisseur`, `entreprise`, `commercant`, `partenaire`). Au rechargement, l'espace apparaît dans « Mes espaces ».
 - Le dernier espace utilisé est rouvert à la connexion suivante.
 
+## Fin de page : la jointure de miel (toutes les pages, ordinateur et téléphone)
+- Le bandeau et le pied de page ont les mêmes petites dents en nid d'abeille, décalées d'une demi-dent pour s'emboîter
+  (`edge_svg(12, 'down')` en haut, `edge_svg(12, 'up', phase=18)` en bas, dans `build.py`).
+- En bas de page, le bandeau descend jusqu'au pied de page ; une fine ligne de miel brille environ une seconde, puis la
+  jointure reste fermée jusqu'à ce qu'on remonte. Sur téléphone, le pied de page étant plus haut que l'écran, la
+  fermeture se fait quand il arrive sous le bandeau. Code : `updateSeal()` dans `main.js`, section « Fin de page » de `style.css`.
+- Le miel qui coule sur les bords passe derrière le pied de page.
+
 ## Référencement (Google)
 - Titres et descriptions des pages, en français et en anglais : dictionnaire `SEO` dans `build.py`.
 - Pages publiques : français à la racine (kamegroupe.com/investisseur), anglais dans /en/ (kamegroupe.com/en/investisseur),
