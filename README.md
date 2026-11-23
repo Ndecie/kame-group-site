@@ -19,21 +19,38 @@ En ligne : https://kamegroupe.com
 - `dist/assets/js/kame-icons.js` — icônes, généré par `build.py` (ne pas modifier à la main).
 - `dist/assets/demo/attestation-kame-demo.txt` — document de démonstration reconnu par « Vérifier un document ».
 
-## Espace entreprise et espace commerçant (démonstration)
+## Espace entreprise (démonstration)
 - `dist/assets/js/business.js` — un outil = une page : accueil, Mon entreprise, KAME ID, KAME Data, KAME Score, KAME Check,
   KAME Registre, KAME Garde, KAME Agro (si activité agricole), Mes investisseurs, Demandes reçues, Levées de fonds, Documents.
   KAME ID, KAME Check et KAME Registre ont deux onglets : « Pour mon entreprise » et « Pour mes clients ».
-  Le commerçant a un menu simplifié (ventes, reçus clients, vérifier un client, financement).
 - Chiffres, clients et investisseurs **fictifs**, calculés dans le navigateur ; un fichier choisi reste sur l'appareil
   (seule son empreinte SHA-256 est calculée, pour le registre et les reçus certifiés).
-- `dist/assets/js/kame-ui.js` — outils communs aux espaces investisseur et entreprise (textes, graphiques, fenêtre,
-  messages, menu du compte et notifications).
+- `dist/assets/js/kame-ui.js` — outils communs aux espaces investisseur, entreprise et commerçant (textes, graphiques,
+  fenêtre, messages, menu du compte et notifications).
+
+## Espace commerçant (démonstration, pensé d'abord pour le téléphone)
+- `dist/assets/js/merchant.js`, adresses `#c-…`. Le commerçant est souvent lui-même son commerce : tout tourne autour
+  de la journée (ouvrir, vendre, fermer en comptant la caisse) et de l'argent de la maison noté à part.
+- Pages : Ma journée (KAME Data), Vendre (vente, dépense, « pour moi » ; montant au clavier, produits, espèces /
+  Airtel Money / Moov Money / à crédit), Crédits (clients et fournisseurs, confirmation de dette par lien = KAME Registre,
+  vérification KAME ID), Stock (acheté en gros, revendu au détail, bénéfice par carton), Reçus (KAME Registre),
+  Mon KAME Score, Financement (dossier envoyé seulement avec accord, question du partenaire, échéances du prêt),
+  Épargne et tontine, Ma vitrine (page vérifiée pour vendre sur WhatsApp), Mes papiers (KAME Check : ANPI, NIF,
+  patente, mairie, facultatifs), Sécurité et aides (code, mode discret, appareils, aides avec droits limités),
+  KAME Agro (si activité agricole), Plus (tous les outils, sur téléphone).
+- KAME Score commerçant, même calcul pour tous : ventes notées chaque jour 20, crédits récupérés 15, fournisseurs et prêt
+  payés à temps 15, épargne et tontine 10, ancienneté 10, identité et papiers 15, chiffres confirmés par d'autres 15.
+- Sur téléphone (900 px et moins) : barre en bas (Ma journée · Crédits · Vendre · Score · Plus) ; le bouton
+  « Enregistrer » de la page Vendre reste visible en bas de l'écran. Mode discret : les montants sont floutés.
+- KAME ne touche jamais l'argent : les espèces sorties ne peuvent pas dépasser ce qu'il y a dans la caisse ;
+  WhatsApp, Airtel Money et Moov Money sont simulés (rien n'est envoyé).
 
 ## Plusieurs espaces avec un seul compte
 - Menu du compte → « Ajouter un espace » : la demande est enregistrée dans le compte (`user_metadata.espaces_demandes`)
   et envoie une alerte e-mail via le formulaire Netlify `nouvel-espace`. Elle ne donne **aucun** accès toute seule.
 - L'équipe KAME ouvre l'espace en ajoutant le rôle dans Netlify : Identity → la personne → Edit settings → Roles
   (`investisseur`, `entreprise`, `commercant`, `partenaire`). Au rechargement, l'espace apparaît dans « Mes espaces ».
+- Un lien direct ouvre le bon espace : `espace-membre.html#e-…` (entreprise), `#c-…` (commerçant).
 - Le dernier espace utilisé est rouvert à la connexion suivante.
 
 ## Fin de page : la jointure de miel (toutes les pages, ordinateur et téléphone)

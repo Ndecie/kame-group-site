@@ -372,11 +372,12 @@
     }
     function show(name) {
       root.querySelectorAll('.space-panel').forEach(function (p) { p.hidden = p.id !== 'space-' + name; });
-      // Espaces investisseur et entreprise : mise en page large et éléments du bandeau réservés (recherche, notifications)
-      var wide = name === 'investor' || name === 'business';
+      // Espaces investisseur, entreprise et commerçant : mise en page large et éléments du bandeau réservés (recherche, notifications)
+      var wide = name === 'investor' || name === 'business' || name === 'merchant';
       root.classList.toggle('space-wide', wide);
       document.documentElement.classList.toggle('inv-on', name === 'investor');
       document.documentElement.classList.toggle('biz-on', name === 'business');
+      document.documentElement.classList.toggle('com-on', name === 'merchant');
     }
     // Demandes d'espace en plus, enregistrées dans le compte (user_metadata) ; le rôle n'est donné que par l'équipe KAME
     function requestsOf(m) {
@@ -467,6 +468,11 @@
         if (r === 'investisseur') {
           show('investor');
           document.dispatchEvent(new CustomEvent('kame:investor', { detail: window.KAME_SPACE }));
+        } else if (r === 'commercant') {
+          // Espace commerçant : sa propre plateforme (merchant.js), pensée pour le téléphone
+          window.KAME_SPACE.business = businessInfo(m, r);
+          show('merchant');
+          document.dispatchEvent(new CustomEvent('kame:merchant', { detail: { role: r } }));
         } else if (BUSINESS_ROLES.indexOf(r) >= 0) {
           window.KAME_SPACE.business = businessInfo(m, r);
           show('business');
@@ -493,12 +499,13 @@
           }
         });
       }
-      // Espace ouvert au départ : celui de l'adresse (#e-… pour l'entreprise), sinon le dernier utilisé, sinon le premier
+      // Espace ouvert au départ : celui de l'adresse (#e-… pour l'entreprise, #c-… pour le commerçant), sinon le dernier utilisé, sinon le premier
       var startRole = roles[0];
       var h = location.hash.replace(/^#\/?/, '').split('/')[0];
       var stored = read(SPACE_KEY);
       var biz = roles.filter(function (r) { return BUSINESS_ROLES.indexOf(r) >= 0; })[0];
-      if (h.indexOf('e-') === 0 && biz) startRole = biz;
+      if (h.indexOf('c-') === 0 && roles.indexOf('commercant') >= 0) startRole = 'commercant';
+      else if (h.indexOf('e-') === 0 && biz) startRole = biz;
       else if (INVESTOR_VIEWS.indexOf(h) >= 0 && roles.indexOf('investisseur') >= 0) startRole = 'investisseur';
       else if (stored && roles.indexOf(stored) >= 0) startRole = stored;
       showRole(startRole);

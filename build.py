@@ -224,6 +224,18 @@ ICONS = {
     'box': '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5"/><path d="M12 12v9"/>',
     'cart': '<circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M3 4h2.5l2.2 11h10.6l2-8H6.6"/>',
     'link': '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    # Espace commerçant
+    'cash': '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5h.01M18 14.5h.01"/>',
+    'mobile': '<rect x="6.5" y="2.5" width="11" height="19" rx="2.2"/><path d="M11 18h2"/>',
+    'wallet': '<path d="M19 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3"/><path d="M21 10h-5a2 2 0 0 0 0 4h5z"/>',
+    'coins': '<ellipse cx="9" cy="6.5" rx="6" ry="2.5"/><path d="M3 6.5v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-4"/><path d="M9 13v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-4c0-1.4-2.7-2.5-6-2.5"/>',
+    'minus': '<path d="M5 12h14"/>',
+    'undo': '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+    'eyeoff': '<path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.1 4.1"/><path d="M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+    'tag': '<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+    'bulb': '<path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.3 1.1 2.2h5c0-.9.5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/>',
+    'list': '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+    'backspace': '<path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="m12.5 9.5 5 5M17.5 9.5l-5 5"/>',
 }
 
 
@@ -644,6 +656,8 @@ def member_header():
         ('#portefeuille', 'briefcase', 'Mon portefeuille', 'My portfolio', ' data-inv-only'),
         ('#e-entreprise', 'building', 'Mon entreprise', 'My business', ' data-biz-only data-biz-menu-label'),
         ('#e-garde', 'garde', 'Sécurité et équipe', 'Security and team', ' data-biz-only'),
+        ('#c-vitrine', 'merchant', 'Ma vitrine', 'My shop window', ' data-com-only'),
+        ('#c-securite', 'garde', 'Sécurité et aides', 'Security and helpers', ' data-com-only'),
         ('index.html#contact', 'help', 'Aide et support', 'Help &amp; support', ''),
         ('index.html', 'home', 'Voir le site KAME GROUP', 'Visit the KAME GROUP site', ''),
     ]
@@ -1251,14 +1265,28 @@ def build_profiles():
          'Shop, market stall, crafts or farm trade: KAME GROUP helps you secure and grow your business with simple tools.'),
         ('Ce que nous faisons ensemble', 'What we do together'),
         features([
+            ('data', ('Vos ventes en 2 touches', 'Sales in 2 taps'),
+             ("Le montant, puis espèces, Airtel Money, Moov Money ou à crédit. KAME Data calcule votre bénéfice et ce qu'il doit y avoir dans la caisse.",
+              'The amount, then cash, Airtel Money, Moov Money or credit. KAME Data works out your profit and what should be in the till.')),
+            ('users', ('Un carnet de crédits', 'A credit book'),
+             ('Qui vous doit, combien, depuis quand. Vos clients confirment leur dette par un lien : fini les disputes.',
+              'Who owes you, how much, since when. Your customers confirm their debt by link: no more disputes.')),
+            ('box', ('Du gros au détail', 'From bulk to retail'),
+             ('Achetez au sac ou au carton, revendez au kilo ou à l\'unité : KAME calcule le bénéfice par carton et vous prévient avant la rupture.',
+              'Buy by the bag or box, resell by the kilo or unit: KAME works out the profit per box and warns you before you run out.')),
+            ('home', ('L\'argent de la maison à part', 'Home money kept apart'),
+             ('Notez ce que vous prenez pour la maison et fixez-vous un salaire : vous savez enfin ce que votre commerce gagne vraiment.',
+              'Record what you take for home and pay yourself a salary: you finally know what your shop really earns.')),
             ('id', ('Une identité vérifiée avec KAME ID', 'A verified identity with KAME ID'),
-             ('Prouvez qui vous êtes en ligne et rassurez vos clients et vos partenaires.', 'Prove who you are online and reassure your customers and partners.')),
+             ('Votre commerce vérifié, et une vitrine pour vendre sur WhatsApp en rassurant vos acheteurs.', 'Your business verified, and a shop window to sell on WhatsApp while reassuring your buyers.')),
             ('score', ('Un dossier fiable avec KAME Score', 'A reliable file with KAME Score'),
-             ('Préparez un dossier solide pour accéder plus facilement au financement auprès de nos partenaires.', 'Build a solid file to access financing more easily through our partners.')),
-            ('data', ('Suivre vos ventes avec KAME Data', 'Track your sales with KAME Data'),
-             ("Des tableaux simples pour voir l'évolution de votre activité.", 'Simple dashboards to see how your business is doing.')),
+             ('Ce que vous notez chaque jour forme votre score et votre dossier, envoyé avec votre accord à nos partenaires de financement.',
+              'What you record every day builds your score and your file, sent with your consent to our funding partners.')),
+            ('coins', ('Épargne et tontine', 'Savings and tontine'),
+             ('Mettez de côté pour le stock des fêtes ou la rentrée, et suivez votre tontine. Votre argent reste chez vous.',
+              'Put money aside for holiday stock or back to school, and track your tontine. Your money stays with you.')),
             ('agro', ("Dans l'agriculture ? KAME Agro", 'In agriculture? KAME Agro'),
-             ('Des outils adaptés aux commerçants du secteur agricole.', 'Tools suited to merchants in the agricultural sector.')),
+             ('Pour les produits frais : les pertes, les prix du marché et vos producteurs.', 'For fresh produce: losses, market prices and your producers.')),
         ]),
         note_section('<p class="notice">%s</p>' % T('<strong>Paiements :</strong> pour vos transactions, vous choisirez la PayTech gabonaise partenaire qui vous convient (partenaires à venir).',
                                                    '<strong>Payments:</strong> for your transactions, you will choose the partner Gabonese PayTech that suits you (partners coming soon).')),
@@ -1645,11 +1673,12 @@ def space_page():
                   '<input type="hidden" name="form-name" value="nouvel-espace"><input name="bot-field">%s</form>'
                   % ''.join('<input name="%s">' % n for n in NEW_SPACE_FIELDS))
     main = ('<section class="section section-tight inv-section"><div class="container container-wide"><div class="space" id="space">%s%s%s%s%s%s</div>%s</div></section>'
-            % (loading, pending, dash, investor_shell(), business_shell(), closed, space_form))
+            % (loading, pending, dash, investor_shell(), business_shell() + merchant_shell(), closed, space_form))
     page('espace-membre.html', 'Mon espace | KAME GROUP', 'My space | KAME GROUP', 'Espace membre KAME GROUP.', main, noindex=True,
          brand_href='espace-membre.html', member=True,
          scripts='<script src="assets/js/kame-icons.js" defer></script>\n<script src="assets/js/kame-ui.js" defer></script>\n'
-                 '<script src="assets/js/investor.js" defer></script>\n<script src="assets/js/business.js" defer></script>\n')
+                 '<script src="assets/js/investor.js" defer></script>\n<script src="assets/js/business.js" defer></script>\n'
+                 '<script src="assets/js/merchant.js" defer></script>\n')
 
 
 INV_VIEWS = ['accueil', 'annuaire', 'opportunites', 'portefeuille', 'demandes', 'score', 'data', 'registre', 'profil', 'entreprise']
@@ -1699,6 +1728,27 @@ def business_shell():
             % (bi_attr('aria-label', 'Espace entreprise', 'Business space'), side_card, icon('info', 18, 2),
                T("Version de démonstration : les chiffres, les clients et les investisseurs affichés sont fictifs, et rien de ce que vous faites ici n'est envoyé.",
                  'Demo version: the figures, customers and investors shown are fictitious, and nothing you do here is sent anywhere.'), views))
+
+
+COM_VIEWS = ['c-journee', 'c-vendre', 'c-credits', 'c-stock', 'c-recus', 'c-score', 'c-financement', 'c-epargne', 'c-vitrine',
+             'c-papiers', 'c-securite', 'c-agro', 'c-plus']
+
+
+def merchant_shell():
+    # Espace commerçant (merchant.js) : pensé d'abord pour le téléphone. Sur ordinateur, le menu est à gauche ;
+    # sur téléphone, une barre en bas de l'écran : Ma journée · Crédits · Vendre · Score · Plus
+    side_card = ('<div class="inv-side-card com-side-card">%s<p data-com-side-text></p><a class="btn btn-light btn-sm" href="#c-vendre" data-com-side-btn></a></div>'
+                 % presenter_bee('merchant', cls='bee-mini'))
+    views = ''.join('<section class="inv-view" data-view="%s" hidden tabindex="-1"></section>' % v for v in COM_VIEWS)
+    return ('<div class="space-panel inv-shell com-shell" id="space-merchant" hidden>'
+            '<aside class="inv-side"><nav class="inv-nav" data-com-nav %s></nav>%s</aside>'
+            '<div class="inv-main"><p class="inv-ribbon">%s<span class="rib-long">%s</span><span class="rib-short">%s</span></p>%s</div>'
+            '<nav class="com-bar" data-com-bar %s></nav></div>'
+            % (bi_attr('aria-label', 'Espace commerçant', 'Merchant space'), side_card, icon('info', 18, 2),
+               T("Version de démonstration : les ventes, les clients et les montants affichés sont fictifs, et rien de ce que vous faites ici n'est envoyé.",
+                 'Demo version: the sales, customers and amounts shown are fictitious, and nothing you do here is sent anywhere.'),
+               T("Démonstration : chiffres fictifs, rien n'est envoyé.", 'Demo: fictitious figures, nothing is sent.'), views,
+               bi_attr('aria-label', 'Raccourcis de l\'espace commerçant', 'Merchant space shortcuts')))
 
 
 def build_auth_pages():

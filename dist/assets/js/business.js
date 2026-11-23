@@ -1,4 +1,5 @@
-/* KAME GROUP — espace entreprise et espace commerçant.
+/* KAME GROUP — espace entreprise.
+   (L'espace commerçant a sa propre plateforme, pensée pour le téléphone : merchant.js.)
    Version de démonstration : les chiffres, clients, investisseurs et documents sont fictifs et calculés dans le navigateur.
    Rien n'est envoyé : un fichier choisi reste sur l'appareil, seule son empreinte numérique (SHA-256) est calculée.
    Un outil = une page ; KAME ID, KAME Check et KAME Registre ont deux onglets : « Pour mon entreprise » et « Pour mes clients ». */
@@ -62,21 +63,6 @@
       ['#e-demandes', 'e-demandes', 'file', 'Demandes reçues', 'Requests received', 'count'],
       ['#e-levees', 'e-levees', 'target', 'Mes levées de fonds', 'My fundraising'],
       ['#e-documents', 'e-documents', 'lock', 'Documents', 'Documents']
-    ],
-    commercant: [
-      ['#e-accueil', 'e-accueil', 'home', 'Accueil', 'Home'],
-      ['#e-data', 'e-data', 'cart', 'Mes ventes', 'My sales'],
-      ['#e-registre/clients', 'e-registre', 'receipt', 'Reçus clients', 'Customer receipts'],
-      ['#e-id/clients', 'e-id', 'id', 'Vérifier un client', 'Verify a customer'],
-      ['#e-score', 'e-score', 'score', 'Mon KAME Score', 'My KAME Score'],
-      ['#e-levees', 'e-levees', 'target', 'Financement', 'Funding'],
-      ['#e-demandes', 'e-demandes', 'file', 'Demandes reçues', 'Requests received', 'count'],
-      ['label', 'Mon commerce', 'My shop'],
-      ['#e-entreprise', 'e-entreprise', 'merchant', 'Ma boutique', 'My shop', 'sub'],
-      ['#e-check', 'e-check', 'check', 'Conformité', 'Compliance', 'sub'],
-      ['#e-documents', 'e-documents', 'lock', 'Documents', 'Documents', 'sub'],
-      ['#e-garde', 'e-garde', 'garde', 'Sécurité', 'Security', 'sub'],
-      ['#e-agro', 'e-agro', 'agro', 'KAME Agro', 'KAME Agro', 'sub agro']
     ]
   };
 
@@ -1549,8 +1535,8 @@
   });
 
   // ------------------------------------------------------------ démarrage
-  function start(r) {
-    role = r === 'commercant' ? 'commercant' : 'entreprise';
+  function start() {
+    role = 'entreprise';
     var info = (window.KAME_SPACE && window.KAME_SPACE.business) || {};
     var key = role + ':' + (info.name || '') + ':' + (info.sector || '') + ':' + (info.agriculture ? 1 : 0);
     if (!cache[key]) {
@@ -1569,8 +1555,9 @@
     route(false);
   }
   window.addEventListener('hashchange', function () { if (active && !shell.hidden) route(true); });
-  document.addEventListener('kame:business', function (e) { start(e.detail && e.detail.role); });
+  document.addEventListener('kame:business', function () { start(); });
   document.addEventListener('kame:investor', function () { active = false; });
+  document.addEventListener('kame:merchant', function () { active = false; });
   // Langue changée : les textes calculés et les listes déroulantes sont redessinés
   new MutationObserver(function () { if (active && !shell.hidden) { renderNav(); rerender(); } }).observe(root, { attributes: true, attributeFilter: ['lang'] });
 })();
